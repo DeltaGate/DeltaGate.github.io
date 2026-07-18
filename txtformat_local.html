@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Local Text Formatter</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d29;
+    --text: #e6e6e6;
+    --muted: #9aa0ac;
+    --accent: #4f9dff;
+    --border: #2a2e3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin:0;
+    padding:20px;
+  }
+  #container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding:20px 30px 30px;
+    border-radius:8px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; color: var(--text); }
+  .subtitle { color: var(--muted); margin-top:0; margin-bottom:20px; font-size:13px; }
+  .nav-link {
+    display: inline-block;
+    margin-bottom: 16px;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  .nav-link:hover { border-color: var(--accent); text-decoration: underline; }
+  .menu {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+  .menu-btn {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .menu-btn:hover { border-color: var(--accent); }
+  .menu-dropdown {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown a {
+    display: block;
+    padding: 10px 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .menu-dropdown a:hover { background: var(--bg); color: var(--accent); }
+  textarea {
+    width:100%;
+    box-sizing:border-box;
+    font-family: Consolas, monospace;
+    font-size:14px;
+    padding:8px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  button, select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin:4px 4px 4px 0;
+  }
+  button:hover, select:hover { border-color: var(--accent); }
+  input[type=text] {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding:8px;
+    margin:2px;
+  }
+  hr { margin: 18px 0; border:none; border-top:1px solid var(--border); }
+  .row { margin-bottom: 8px; }
+  .counts input { width:90px; text-align:center; color: var(--muted); }
+  .hint { color: var(--muted); font-size:12px; }
+  h3 { margin-bottom:4px; color: var(--text); }
+  dl { font-size: 13px; color: var(--muted); }
+  a { color: var(--accent); }
+  label { color: var(--text); }
+</style>
+</head>
+<body>
+<div id="container">
+  <div class="menu" id="navMenu">
+    <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+    <div class="menu-dropdown" id="menuDropdown">
+      <a href="vuln-feed.html">🛡️ Vulnerability Feed</a>
+      <a href="query-library.html">📚 Query Library</a>
+      <a href="notes.html">🗒️ Notes</a>
+    </div>
+  </div>
+  <h1>Local Text Formatter</h1>
+  <p class="subtitle">Offline clone of txtformat.com &mdash; everything runs in your browser, nothing is sent anywhere.</p>
+
+  <div class="row">
+    <button onclick="cleartext();">Clear</button>
+    <button onclick="selectall();">Select all</button>
+    <input type="text" readonly id="words" class="counts" value="0 words" />
+    <input type="text" readonly id="characters" class="counts" value="0 chars" />
+  </div>
+
+  <textarea cols="74" rows="16" id="thetext" onkeyup="updatecounts();" onchange="updatecounts();" onfocus="updatecounts();">Paste your text here :)</textarea>
+
+  <div class="row">
+    <button onclick="uppercase();">UPPERCASE ALL</button>
+    <button onclick="lowercase();">lowercase all</button>
+    <button onclick="capitalizesentences();">Capitalize sentences</button>
+    <button onclick="capitalizewords();">Capitalize Words</button>
+  </div>
+  <hr />
+
+  <p>
+    <button onclick="replacetext();">Replace</button>
+    <input type="text" id="from" placeholder="find" />
+    with
+    <input type="text" id="to" placeholder="replace" />
+    &nbsp;&nbsp;
+    <label><input type="checkbox" id="cs" /> Case sensitive</label>
+  </p>
+  <hr />
+
+  <p>
+    <button onclick="addtext();">Add</button>
+    <input type="text" id="add" placeholder="text to add" />
+    to the
+    <select id="addpos">
+      <option value="start">start</option>
+      <option value="end">end</option>
+    </select>
+    of each line.
+  </p>
+  <hr />
+
+  <p>
+    <button onclick="trimtext();">Trim</button>
+    <select id="trimpos">
+      <option value="first">first</option>
+      <option value="last">last</option>
+    </select>
+    <select id="trimnumber">
+      <script>document.write(Array.from({length:20},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''));</script>
+    </select>
+    characters of each line.
+  </p>
+  <hr />
+
+  <h3>Special characters</h3>
+  <dl>
+    <dt>%L</dt><dd>Line number (Add tool only)</dd>
+    <dt>%N</dt><dd>New line (Replace / Add tools)</dd>
+  </dl>
+  <p class="hint">Note: "Replace" uses the "find" text as a regular expression (same as the original site), so characters like <code>. * + ? ( ) [ ] ^ $</code> have special meaning. Escape them with a backslash if you want a literal match.</p>
+</div>
+
+<script>
+function cleartext() {
+  var t = document.getElementById("thetext");
+  t.value = '';
+  updatecounts();
+}
+
+function selectall() {
+  var t = document.getElementById("thetext");
+  t.focus();
+  t.select();
+}
+
+function updatetextlength() {
+  var t = document.getElementById("thetext");
+  var c = document.getElementById("characters");
+  c.value = t.value.length + ' chars';
+}
+
+function updatewords() {
+  var t = document.getElementById("thetext");
+  var fullStr = t.value + " ";
+  var initial_whitespace_rExp = /^[^A-Za-z0-9]+/gi;
+  var left_trimmedStr = fullStr.replace(initial_whitespace_rExp, "");
+  var non_alphanumerics_rExp = /[^A-Za-z0-9]+/gi;
+  var cleanedStr = left_trimmedStr.replace(non_alphanumerics_rExp, " ");
+  var splitString = cleanedStr.split(" ");
+  var word_count = splitString.length - 1;
+  var w = document.getElementById("words");
+  w.value = word_count + ' words';
+}
+
+function updatecounts() {
+  updatetextlength();
+  updatewords();
+}
+
+function uppercase() {
+  var t = document.getElementById("thetext");
+  t.value = t.value.toUpperCase();
+  updatecounts();
+}
+
+function lowercase() {
+  var t = document.getElementById("thetext");
+  t.value = t.value.toLowerCase();
+  updatecounts();
+}
+
+function capitalizewords() {
+  var t = document.getElementById("thetext");
+  t.value = (t.value + '').replace(/^(.)|\s(.)/g, function ($1) {
+    return $1.toUpperCase();
+  });
+  updatecounts();
+}
+
+function ltrim(str, chars) {
+  chars = chars || "\\s";
+  return str.replace(new RegExp("^[" + chars + "]+", "g"), "");
+}
+
+function rtrim(str, chars) {
+  chars = chars || "\\s";
+  return str.replace(new RegExp("[" + chars + "]+$", "g"), "");
+}
+
+function capitalizesentences() {
+  var t = document.getElementById("thetext");
+  var tarray = t.value.split(".");
+  var tstr = '';
+  for (var i = 0; i < tarray.length; i++) {
+    tarray[i] = ltrim(tarray[i], ' ');
+    tstr = tstr + tarray[i].substring(0, 1).toUpperCase() + tarray[i].slice(1).toLowerCase();
+    if (i < (tarray.length - 1)) tstr = tstr + '. ';
+  }
+  t.value = tstr;
+
+  tarray = t.value.split("?");
+  tstr = '';
+  for (var i = 0; i < tarray.length; i++) {
+    tarray[i] = ltrim(tarray[i], ' ');
+    tstr = tstr + tarray[i].substring(0, 1).toUpperCase() + tarray[i].slice(1);
+    if (i < (tarray.length - 1)) tstr = tstr + '? ';
+  }
+  t.value = tstr;
+
+  tarray = t.value.split("!");
+  tstr = '';
+  for (var i = 0; i < tarray.length; i++) {
+    tarray[i] = ltrim(tarray[i], ' ');
+    tstr = tstr + tarray[i].substring(0, 1).toUpperCase() + tarray[i].slice(1);
+    if (i < (tarray.length - 1)) tstr = tstr + '! ';
+  }
+  t.value = tstr;
+  updatecounts();
+}
+
+function replacetext() {
+  var t = document.getElementById("thetext");
+  var from = document.getElementById("from");
+  var to = document.getElementById("to");
+  var cs = document.getElementById("cs");
+  var scope;
+
+  var ff = from.value.replace("%N", "\n");
+  var tt = to.value.replace("%N", "\n");
+
+  scope = cs.checked ? 'g' : 'gi';
+
+  var temp = t.value;
+  try {
+    temp = temp.replace(new RegExp(ff, scope), tt);
+    t.value = temp;
+  } catch (e) {
+    alert('Invalid find pattern: ' + e.message);
+  }
+
+  from.value = '';
+  to.value = '';
+  updatecounts();
+}
+
+function addtext() {
+  var t = document.getElementById("thetext");
+  var a = document.getElementById("add");
+  var p = document.getElementById("addpos");
+  var tstr = '';
+  var tarray = t.value.split("\n");
+
+  for (var i = 0; i < tarray.length; i++) {
+    var insert = a.value.replace("%L", i + 1);
+    insert = insert.replace("%N", "\n");
+    if (p.value === 'start') {
+      tstr = tstr + insert + tarray[i];
+    } else {
+      tstr = tstr + tarray[i] + insert;
+    }
+    if (i < (tarray.length - 1)) tstr = tstr + "\n";
+  }
+  t.value = tstr;
+
+  a.value = '';
+  updatecounts();
+}
+
+function trimtext() {
+  var t = document.getElementById("thetext");
+  var n = document.getElementById("trimnumber");
+  var p = document.getElementById("trimpos");
+  var tarray = t.value.split("\n");
+  var tstr = '';
+
+  if (p.value === 'first') {
+    for (var i = 0; i < tarray.length; i++) tstr = tstr + tarray[i].substr(n.value) + "\n";
+    tstr = rtrim(tstr);
+  } else {
+    for (var i = 0; i < tarray.length; i++) {
+      var tlen = tarray[i].length;
+      var tpos = tlen - n.value;
+      tstr = tstr + tarray[i].substr(0, tpos) + "\n";
+    }
+    tstr = rtrim(tstr);
+  }
+
+  t.value = tstr;
+  updatecounts();
+}
+
+updatecounts();
+
+const menuBtn = document.getElementById("menuBtn");
+const menuDropdown = document.getElementById("menuDropdown");
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = menuDropdown.classList.toggle("open");
+  menuBtn.setAttribute("aria-expanded", open);
+});
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("navMenu").contains(e.target)) {
+    menuDropdown.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+});
+</script>
+</body>
+</html>
