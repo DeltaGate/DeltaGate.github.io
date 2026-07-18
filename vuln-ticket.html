@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Halo Vuln Ticket Builder</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎫</text></svg>">
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d29;
+    --text: #e6e6e6;
+    --muted: #9aa0ac;
+    --accent: #4f9dff;
+    --border: #2a2e3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { margin: 0; font-size: 1.4rem; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  select, button, input[type=text] {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  input[type=text] { cursor: text; }
+  button:hover, select:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .menu { position: relative; display: inline-block; }
+  .menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown a {
+    display: block;
+    padding: 10px 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .menu-dropdown a:hover { background: var(--bg); color: var(--accent); }
+  #status { color: var(--muted); font-size: 0.85rem; }
+  main { padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .panel h2 { margin: 0 0 14px; font-size: 1rem; color: var(--text); }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 9px 10px;
+    border-radius: 6px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    resize: vertical;
+    cursor: text;
+  }
+  .field select { cursor: pointer; }
+  .field textarea { min-height: 70px; line-height: 1.4; }
+  .field textarea.tall { min-height: 110px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .hint { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .subhead {
+    margin: 18px 0 10px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .subhead:first-child { margin-top: 0; }
+  #preview {
+    width: 100%;
+    min-height: 640px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    resize: vertical;
+  }
+  .preview-rich {
+    background: #ffffff;
+    color: #1a1a1a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 22px;
+    min-height: 640px;
+    max-height: 900px;
+    overflow-y: auto;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .preview-rich h2 { font-size: 1.15rem; margin: 0 0 10px; color: #111; }
+  .preview-rich h3 { font-size: 0.98rem; margin: 18px 0 6px; color: #111; }
+  .preview-rich p { margin: 6px 0 14px; }
+  .preview-rich ul, .preview-rich ol { margin: 6px 0 14px; padding-left: 22px; }
+  .preview-rich table { border-collapse: collapse; width: 100%; margin: 4px 0 16px; }
+  .preview-rich table td { border: 1px solid #d7d7d7; padding: 6px 10px; vertical-align: top; }
+  .preview-rich table td.label { font-weight: 700; width: 190px; background: #f5f6f8; }
+  .preview-rich pre {
+    background: #f5f6f8;
+    border: 1px solid #d7d7d7;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: Consolas, monospace;
+    font-size: 0.82rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 4px 0 14px;
+  }
+  .preview-actions { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .preview-actions button { font-weight: 600; }
+  #copyBtn { border-color: var(--accent); color: var(--accent); }
+  #copyBtn.copied { background: #16321f; border-color: #3fbf60; color: #7ee69a; }
+  .sev-chip {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+  .sev-Critical { background: #4a1f24; color: #ff8a8a; }
+  .sev-High { background: #4a2e1f; color: #ffb066; }
+  .sev-Medium { background: #4a441f; color: #ffe066; }
+  .sev-Low { background: #1f4a2b; color: #7ee69a; }
+  footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎫 Halo Vuln Ticket Builder</h1>
+  <div class="controls">
+    <button id="loadExampleBtn">📋 Load Example</button>
+    <button id="clearBtn">🗑️ Clear Form</button>
+    <div class="menu" id="navMenu">
+      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">☰ Site Map</button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <a href="index.html">🛡️ Vulnerability Feed</a>
+        <a href="password-generator.html">🔐 Password Generator</a>
+        <a href="txtformat_local.html">📝 Text Formatter</a>
+        <a href="query-library.html">📚 Query Library</a>
+        <a href="notes.html">🗒️ Notes</a>
+      </div>
+    </div>
+    <span id="status">Draft auto-saved locally</span>
+  </div>
+</header>
+
+<main>
+  <div class="layout">
+
+    <div class="panel">
+      <h2>Ticket Details</h2>
+
+      <div class="subhead">Header</div>
+      <div class="field">
+        <label>Ticket Title</label>
+        <input type="text" id="title" placeholder="e.g. Apache Struts RCE Vulnerability">
+        <div class="hint">Auto-suggested from Severity / CVE / Asset below — edit as needed.</div>
+      </div>
+
+      <div class="row3">
+        <div class="field">
+          <label>Severity <span id="sevChip" class="sev-chip sev-Critical">Critical</span></label>
+          <select id="severity">
+            <option value="Critical">🔴 Critical</option>
+            <option value="High">🟠 High</option>
+            <option value="Medium">🟡 Medium</option>
+            <option value="Low">🟢 Low</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>CVE</label>
+          <input type="text" id="cve" placeholder="CVE-2026-12345 or N/A">
+        </div>
+        <div class="field">
+          <label>SLA From Ticket Date</label>
+          <input type="text" id="sla" placeholder="Fix immediately, interrupting planned work">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Asset(s)</label>
+          <input type="text" id="asset" placeholder="Device Name / API Endpoint">
+        </div>
+        <div class="field">
+          <label>Source</label>
+          <select id="source">
+            <option>Nessus</option>
+            <option>Tenable Web Scan</option>
+            <option>Defender</option>
+            <option>Wiz</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="subhead">Findings</div>
+      <div class="field">
+        <label>Summary</label>
+        <textarea id="summary" placeholder="Short one/two line summary of the vulnerability and where it was found."></textarea>
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <textarea id="description" class="tall" placeholder="Detailed description of the vulnerability (e.g. from scanner plugin output)."></textarea>
+      </div>
+      <div class="field">
+        <label>Impact</label>
+        <textarea id="impact" placeholder="What is the risk / impact if left unremediated?"></textarea>
+      </div>
+      <div class="field">
+        <label>Required Actions</label>
+        <textarea id="actions" placeholder="Remove / Upgrade / Patch / Configuration change required."></textarea>
+      </div>
+
+      <div class="subhead">Source of Findings</div>
+      <div class="row3">
+        <div class="field">
+          <label>Scanner</label>
+          <input type="text" id="scanner" placeholder="Nessus">
+        </div>
+        <div class="field">
+          <label>Plugin / Rule ID</label>
+          <input type="text" id="pluginid" placeholder="172179">
+        </div>
+        <div class="field">
+          <label>Detection Age</label>
+          <input type="text" id="detectionage" placeholder="110 Days">
+        </div>
+      </div>
+
+      <div class="subhead">Additional Evidence</div>
+      <div class="field">
+        <label>Evidence / raw output (paste as-is, formatting preserved)</label>
+        <textarea id="evidence" class="tall" placeholder="Path : C:\Program Files\...&#10;Installed version : 6.0.26.33205&#10;Security End of Life : November 12, 2024"></textarea>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Halo ITSM Ready Preview</h2>
+      <div class="preview-actions">
+        <button id="copyBtn">📋 Copy Formatted (for Halo)</button>
+        <button id="copyPlainBtn">📄 Copy Plain Text</button>
+        <button id="copyTitleBtn">📋 Copy Title Only</button>
+      </div>
+      <div class="hint" style="margin-bottom:10px;">Halo's ticket editor (TinyMCE) supports bold, tables and bullet lists — use "Copy Formatted" then paste directly into the ticket body.</div>
+      <div id="previewRich" class="preview-rich"></div>
+      <textarea id="preview" style="display:none;"></textarea>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  Runs entirely in your browser. Draft is saved to this browser's local storage only — nothing is sent anywhere.
+</footer>
+
+<script>
+const ids = ["title","severity","cve","sla","asset","source","summary","description","impact","actions","scanner","pluginid","detectionage","evidence"];
+const els = {};
+ids.forEach(id => els[id] = document.getElementById(id));
+const previewEl = document.getElementById("preview");
+const previewRichEl = document.getElementById("previewRich");
+const sevChip = document.getElementById("sevChip");
+const statusEl = document.getElementById("status");
+
+const SLA_DEFAULTS = { Critical: "Fix immediately, interrupting planned work", High: "2 weeks", Medium: "30 days", Low: "90 Days" };
+const SEV_EMOJI = { Critical: "🔴", High: "🟠", Medium: "🟡", Low: "🟢" };
+const SEV_HEADING = {
+  Critical: "Critical Vulnerability – Immediate Remediation Required",
+  High: "High Vulnerability – Prompt Remediation Required",
+  Medium: "Medium Vulnerability – Remediation Required",
+  Low: "Low Vulnerability – Remediation Recommended"
+};
+
+const STORAGE_KEY = "vulnTicketDraft";
+let lastSeverity = null;
+let userEditedSla = false;
+let userEditedTitle = false;
+
+function suggestTitle() {
+  const sev = els.severity.value;
+  const cve = els.cve.value.trim() || "N/A";
+  const asset = els.asset.value.trim() || "asset";
+  const cvePart = cve !== "N/A" ? ` – ${cve}` : "";
+  return `[${sev.toUpperCase()}] Vulnerability${cvePart} – ${asset}`;
+}
+
+function buildPreview() {
+  const sev = els.severity.value;
+  const emoji = SEV_EMOJI[sev];
+  const heading = SEV_HEADING[sev];
+  const title = els.title.value.trim() || suggestTitle();
+  const cve = els.cve.value.trim() || "N/A";
+  const sla = els.sla.value.trim() || SLA_DEFAULTS[sev];
+  const asset = els.asset.value.trim() || "N/A";
+  const source = els.source.value;
+  const summary = els.summary.value.trim() || "N/A";
+  const description = els.description.value.trim() || "N/A";
+  const impact = els.impact.value.trim() || "N/A";
+  const actions = els.actions.value.trim() || "N/A";
+  const scanner = els.scanner.value.trim() || source;
+  const pluginid = els.pluginid.value.trim() || "N/A";
+  const detectionage = els.detectionage.value.trim() || "N/A";
+  const evidence = els.evidence.value.trim();
+
+  let out = "";
+  out += `${title}\n\n`;
+  out += `${heading}\n`;
+  out += `Summary\n${summary}\n\n`;
+  out += `CVE\n${cve}\n\n`;
+  out += `Severity\n${emoji} ${sev}\n\n`;
+  out += `SLA From Ticket Date\n${sla}\n\n`;
+  out += `Asset\n${asset}\n\n`;
+  out += `Source\n${source}\n\n`;
+  out += `Description\n${description}\n\n`;
+  out += `Impact\n${impact}\n\n`;
+  out += `Required Actions\n${actions}\n\n`;
+  out += `Source of Findings\n\n`;
+  out += `Scanner\n${scanner}\n`;
+  out += `Plugin ID\n${pluginid}\n`;
+  out += `Detection Age\n${detectionage}\n`;
+  if (evidence) {
+    out += `\nAdditional Evidence\n\n${evidence}\n`;
+  }
+  return out;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Escapes HTML then converts newlines to <br> so multi-line textarea content
+// (e.g. Description) keeps its line breaks when rendered/pasted as HTML.
+function escapeHtmlKeepLines(str) {
+  return escapeHtml(str).replace(/\n/g, "<br>");
+}
+
+// Turns multi-line text into <br>-joined HTML, or a <ul> bullet list if it
+// looks like a list (2+ lines, or lines starting with -/*/• )
+function textToHtmlBlock(text) {
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l.length);
+  if (lines.length === 0) return "N/A";
+  const looksLikeList = lines.length > 1 && lines.some(l => /^[-*•]\s+/.test(l));
+  if (looksLikeList) {
+    const items = lines.map(l => escapeHtml(l.replace(/^[-*•]\s+/, "")));
+    return `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`;
+  }
+  if (lines.length > 1) {
+    return `<ul>${lines.map(l => `<li>${escapeHtml(l)}</li>`).join("")}</ul>`;
+  }
+  return `<p>${escapeHtml(lines[0])}</p>`;
+}
+
+function buildPreviewHtml() {
+  const sev = els.severity.value;
+  const emoji = SEV_EMOJI[sev];
+  const heading = SEV_HEADING[sev];
+  const title = escapeHtml(els.title.value.trim() || suggestTitle());
+  const cve = escapeHtml(els.cve.value.trim() || "N/A");
+  const sla = escapeHtml(els.sla.value.trim() || SLA_DEFAULTS[sev]);
+  const asset = escapeHtml(els.asset.value.trim() || "N/A");
+  const source = escapeHtml(els.source.value);
+  const summary = escapeHtmlKeepLines(els.summary.value.trim() || "N/A");
+  const description = escapeHtmlKeepLines(els.description.value.trim() || "N/A");
+  const impact = escapeHtmlKeepLines(els.impact.value.trim() || "N/A");
+  const scanner = escapeHtml(els.scanner.value.trim() || source);
+  const pluginid = escapeHtml(els.pluginid.value.trim() || "N/A");
+  const detectionage = escapeHtml(els.detectionage.value.trim() || "N/A");
+  const evidence = els.evidence.value.trim();
+
+  // Inline styles are used throughout (rather than relying on the page's
+  // stylesheet) so text stays dark/readable once copied into Halo's editor,
+  // which strips external CSS classes and only keeps inline styles.
+  const TEXT = "color:#111111;";
+  const h2Style = `style="${TEXT}margin:0 0 10px;font-size:1.15rem;"`;
+  const h3Style = `style="${TEXT}margin:18px 0 6px;font-size:0.98rem;"`;
+  const pStyle = `style="${TEXT}margin:6px 0 14px;"`;
+  const liStyle = `style="${TEXT}"`;
+  const tdLabelStyle = `style="${TEXT}font-weight:700;width:190px;background:#f5f6f8;border:1px solid #d7d7d7;padding:6px 10px;vertical-align:top;"`;
+  const tdStyle = `style="${TEXT}border:1px solid #d7d7d7;padding:6px 10px;vertical-align:top;"`;
+  const tableStyle = `style="border-collapse:collapse;width:100%;margin:4px 0 16px;"`;
+  const preStyle = `style="${TEXT}background:#f5f6f8;border:1px solid #d7d7d7;border-radius:4px;padding:10px 12px;font-family:Consolas,monospace;font-size:0.82rem;white-space:pre-wrap;word-break:break-word;margin:4px 0 14px;"`;
+
+  function block(tag, content, style) {
+    return `<${tag} ${style}>${content}</${tag}>`;
+  }
+
+  function actionsToHtml(text) {
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length);
+    if (lines.length === 0) return block("p", "N/A", pStyle);
+    const asItems = lines.map(l => l.replace(/^[-*•]\s+/, ""));
+    if (lines.length > 1) {
+      return `<ul style="margin:6px 0 14px;padding-left:22px;">${asItems.map(i => `<li ${liStyle}>${escapeHtml(i)}</li>`).join("")}</ul>`;
+    }
+    return block("p", escapeHtml(asItems[0]), pStyle);
+  }
+
+  let html = "";
+  html += block("h2", title, h2Style);
+  html += block("p", `<strong>${escapeHtml(heading)}</strong>`, pStyle);
+
+  html += `<table ${tableStyle}><tbody>`;
+  html += `<tr><td ${tdLabelStyle}>Severity</td><td ${tdStyle}>${emoji} ${sev}</td></tr>`;
+  html += `<tr><td ${tdLabelStyle}>CVE</td><td ${tdStyle}>${cve}</td></tr>`;
+  html += `<tr><td ${tdLabelStyle}>SLA From Ticket Date</td><td ${tdStyle}>${sla}</td></tr>`;
+  html += `<tr><td ${tdLabelStyle}>Asset</td><td ${tdStyle}>${asset}</td></tr>`;
+  html += `<tr><td ${tdLabelStyle}>Source</td><td ${tdStyle}>${source}</td></tr>`;
+  html += `</tbody></table>`;
+
+  html += block("h3", "Summary", h3Style) + block("p", summary, pStyle);
+  html += block("h3", "Description", h3Style) + block("p", description, pStyle);
+  html += block("h3", "Impact", h3Style) + block("p", impact, pStyle);
+  html += block("h3", "Required Actions", h3Style) + actionsToHtml(els.actions.value.trim());
+
+  html += block("h3", "Source of Findings", h3Style);
+  html += `<table ${tableStyle}><tbody>`;
+  html += `<tr><td ${tdLabelStyle}>Scanner</td><td ${tdStyle}>${scanner}</td></tr>`;
+  html += `<tr><td ${tdLabelStyle}>Plugin ID</td><td ${tdStyle}>${pluginid}</td></tr>`;
+  html += `<tr><td ${tdLabelStyle}>Detection Age</td><td ${tdStyle}>${detectionage}</td></tr>`;
+  html += `</tbody></table>`;
+
+  if (evidence) {
+    html += block("h3", "Additional Evidence", h3Style);
+    html += `<pre ${preStyle}>${escapeHtml(evidence)}</pre>`;
+  }
+  return html;
+}
+
+function render() {
+  const sev = els.severity.value;
+  sevChip.textContent = sev;
+  sevChip.className = "sev-chip sev-" + sev;
+
+  if (!userEditedSla || els.sla.value === "" || els.sla.value === SLA_DEFAULTS[lastSeverity]) {
+    els.sla.value = SLA_DEFAULTS[sev];
+    userEditedSla = false;
+  }
+  lastSeverity = sev;
+
+  if (!userEditedTitle) {
+    els.title.value = suggestTitle();
+  }
+
+  previewEl.value = buildPreview();
+  previewRichEl.innerHTML = buildPreviewHtml();
+  saveDraft();
+}
+
+function saveDraft() {
+  const data = {};
+  ids.forEach(id => data[id] = els[id].value);
+  data.userEditedTitle = userEditedTitle;
+  data.userEditedSla = userEditedSla;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  statusEl.textContent = "Draft auto-saved locally · " + new Date().toLocaleTimeString();
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    ids.forEach(id => { if (data[id] !== undefined) els[id].value = data[id]; });
+    userEditedTitle = !!data.userEditedTitle;
+    userEditedSla = !!data.userEditedSla;
+  } catch (e) { /* ignore corrupt draft */ }
+}
+
+els.title.addEventListener("input", () => { userEditedTitle = true; render(); });
+els.sla.addEventListener("input", () => { userEditedSla = true; render(); });
+ids.filter(id => id !== "title" && id !== "sla").forEach(id => {
+  els[id].addEventListener("input", render);
+  els[id].addEventListener("change", render);
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("copyBtn");
+  let copied = false;
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    try {
+      const htmlBlob = new Blob([previewRichEl.innerHTML], { type: "text/html" });
+      const textBlob = new Blob([previewEl.value], { type: "text/plain" });
+      await navigator.clipboard.write([new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob })]);
+      copied = true;
+    } catch (e) { /* fall back below */ }
+  }
+  if (!copied) {
+    // Fallback: select the rendered rich preview and use execCommand so the
+    // browser copies it as formatted HTML (works without clipboard-write permission).
+    const range = document.createRange();
+    range.selectNodeContents(previewRichEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    try { copied = document.execCommand("copy"); } catch (e) { copied = false; }
+    sel.removeAllRanges();
+  }
+  btn.classList.add("copied");
+  btn.textContent = copied ? "✅ Copied!" : "⚠️ Copy failed";
+  setTimeout(() => { btn.classList.remove("copied"); btn.textContent = "📋 Copy Formatted (for Halo)"; }, 1800);
+});
+
+document.getElementById("copyPlainBtn").addEventListener("click", async () => {
+  await navigator.clipboard.writeText(previewEl.value);
+  const btn = document.getElementById("copyPlainBtn");
+  const original = btn.textContent;
+  btn.textContent = "✅ Copied!";
+  setTimeout(() => { btn.textContent = original; }, 1800);
+});
+
+document.getElementById("copyTitleBtn").addEventListener("click", async () => {
+  await navigator.clipboard.writeText(els.title.value.trim() || suggestTitle());
+  const btn = document.getElementById("copyTitleBtn");
+  const original = btn.textContent;
+  btn.textContent = "✅ Copied!";
+  setTimeout(() => { btn.textContent = original; }, 1800);
+});
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  if (!confirm("Clear all fields?")) return;
+  ids.forEach(id => els[id].value = "");
+  els.severity.value = "Critical";
+  els.source.value = "Nessus";
+  userEditedTitle = false;
+  userEditedSla = false;
+  lastSeverity = null;
+  render();
+});
+
+document.getElementById("loadExampleBtn").addEventListener("click", () => {
+  els.title.value = "";
+  els.severity.value = "Critical";
+  els.cve.value = "N/A";
+  els.asset.value = "example-device-name";
+  els.source.value = "Nessus";
+  els.summary.value = "A critical vulnerability has been identified on a production-facing asset.";
+  els.description.value = "According to its version, the Microsoft .NET Core installed on the remote host is no longer maintained by its vendor or provider.";
+  els.impact.value = "Lack of support implies that no new security patches for the product will be released by the vendor. As a result, it may contain security vulnerabilities.";
+  els.actions.value = "Remove / Upgrade the version of .NET in use";
+  els.scanner.value = "Nessus";
+  els.pluginid.value = "172179";
+  els.detectionage.value = "110 Days";
+  els.evidence.value = "Path                                   : C:\\Program Files\\dotnet\\shared\\Microsoft.NetCore.App\\6.0.26\\\nInstalled version                      : 6.0.26.33205\nSecurity End of Life                   : November 12, 2024\nTime since Security End of Life (Est.) : >= 1 year";
+  userEditedTitle = false;
+  userEditedSla = false;
+  lastSeverity = null;
+  render();
+});
+
+const menuBtn = document.getElementById("menuBtn");
+const menuDropdown = document.getElementById("menuDropdown");
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = menuDropdown.classList.toggle("open");
+  menuBtn.setAttribute("aria-expanded", open);
+});
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("navMenu").contains(e.target)) {
+    menuDropdown.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+});
+
+loadDraft();
+els.severity.value = els.severity.value || "Critical";
+els.source.value = els.source.value || "Nessus";
+lastSeverity = els.severity.value;
+render();
+</script>
+
+</body>
+</html>

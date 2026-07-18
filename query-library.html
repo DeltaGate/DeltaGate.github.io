@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Query Library</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <style>
   :root {
     --bg: #0f1117;
@@ -43,7 +44,6 @@
   button:hover, select:hover { border-color: var(--accent); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   .menu { position: relative; display: inline-block; }
-  .menu-btn { font-size: 1.1rem; line-height: 1; padding: 8px 12px; }
   .menu-dropdown {
     display: none;
     position: absolute;
@@ -283,9 +283,11 @@
     <button id="connectBtn">📁 Connect "queries" folder</button>
     <button id="refreshBtn" disabled>Refresh</button>
     <div class="menu" id="navMenu">
-      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">☰ Site Map</button>
       <div class="menu-dropdown" id="menuDropdown">
-        <a href="vuln-feed.html">🛡️ Vulnerability Feed</a>
+        <a href="index.html">🛡️ Vulnerability Feed</a>
+        <a href="vuln-ticket.html">🎫 Halo Vuln Ticket Builder</a>
+        <a href="password-generator.html">🔐 Password Generator</a>
         <a href="txtformat_local.html">📝 Text Formatter</a>
         <a href="notes.html">🗒️ Notes</a>
       </div>
