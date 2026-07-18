@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vulnerability News Feed</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d29;
+    --text: #e6e6e6;
+    --muted: #9aa0ac;
+    --accent: #4f9dff;
+    --border: #2a2e3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { margin: 0; font-size: 1.4rem; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  select, button {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  button:hover, select:hover { border-color: var(--accent); }
+  .menu {
+    position: relative;
+    display: inline-block;
+  }
+  .menu-btn {
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 8px 12px;
+  }
+  .menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown a {
+    display: block;
+    padding: 10px 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .menu-dropdown a:hover { background: var(--bg); color: var(--accent); }
+  #status { color: var(--muted); font-size: 0.85rem; margin-left: 8px; }
+  main { padding: 20px 24px; max-width: 900px; margin: 0 auto; }
+  .item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .item a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.02rem;
+  }
+  .item a:hover { color: var(--accent); text-decoration: underline; }
+  .meta {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .source-tag {
+    background: #24304a;
+    color: #8fc1ff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+  }
+  .alert-tag {
+    background: #4a1f24;
+    color: #ff8a8a;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .item.alert { border-color: #7a2e34; }
+  #alertToggle.active {
+    border-color: #ff8a8a;
+    background: #2a1418;
+    color: #ff8a8a;
+  }
+  .snippet { margin-top: 8px; font-size: 0.88rem; color: #c4c8d0; }
+  .loading, .empty { color: var(--muted); text-align: center; padding: 40px; }
+  footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛡️ Vulnerability News Feed</h1>
+  <div class="controls">
+    <select id="sourceFilter">
+      <option value="all">All sources</option>
+    </select>
+    <button id="refreshBtn">Refresh now</button>
+    <button id="alertToggle" title="Show only zero-day / actively exploited alerts">🔥 Zero-days &amp; Active Exploits</button>
+    <div class="menu" id="navMenu">
+      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <a href="txtformat_local.html">📝 Text Formatter</a>
+        <a href="query-library.html">📚 Query Library</a>
+        <a href="notes.html">🗒️ Notes</a>
+      </div>
+    </div>
+    <span id="status"></span>
+  </div>
+</header>
+
+<main id="results">
+  <div class="loading">Loading feeds…</div>
+</main>
+
+<footer>
+  Runs entirely in your browser. Feeds fetched via the free
+  <a href="https://rss2json.com" style="color:var(--accent)">rss2json.com</a> API (to bypass CORS).
+  Auto-refreshes every 15 minutes.
+</footer>
+
+<script>
+// --- Configure your RSS sources here ---
+const FEEDS = [
+  { name: "CISA KEV",         url: "https://www.cisa.gov/cybersecurity-advisories/all.xml" },
+  { name: "The Hacker News",  url: "https://feeds.feedburner.com/TheHackersNews" },
+  { name: "Krebs on Security",url: "https://krebsonsecurity.com/feed/" },
+  { name: "BleepingComputer", url: "https://www.bleepingcomputer.com/feed/" },
+  { name: "SANS ISC",         url: "https://isc.sans.edu/rssfeed_full.xml" },
+  { name: "Zero Day Initiative", url: "https://www.thezdi.com/blog?format=rss" },
+  { name: "Rapid7",           url: "https://www.rapid7.com/rss.xml" },
+ // { name: "Dark Reading",     url: "https://www.darkreading.com/rss.xml" },
+];
+
+const RSS2JSON_ENDPOINT = "https://api.rss2json.com/v1/api.json?rss_url=";
+const REFRESH_MS = 15 * 60 * 1000;
+let allItems = [];
+let alertOnly = false;
+
+// Keywords/phrases indicating a zero-day or actively-exploited vulnerability
+const ALERT_PATTERN = /\bzero[\s-]?day\b|\b0-?day\b|actively exploit|exploited in the wild|exploitation in the wild|under active exploitation|being exploited|mass exploitation|proof[\s-]of[\s-]concept exploit|poc exploit released|known exploited vulnerabilit(y|ies)|\bkev\b|exploited by (ransomware|attackers|threat actors|hackers)/i;
+
+function isAlertItem(item) {
+  return ALERT_PATTERN.test(item.title || "") || ALERT_PATTERN.test(item.snippet || "") || item.source === "CISA KEV";
+}
+
+const resultsEl = document.getElementById("results");
+const statusEl = document.getElementById("status");
+const sourceFilterEl = document.getElementById("sourceFilter");
+const refreshBtn = document.getElementById("refreshBtn");
+const alertToggleEl = document.getElementById("alertToggle");
+
+function stripHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  return (tmp.textContent || tmp.innerText || "").trim();
+}
+
+async function fetchFeed(feed) {
+  try {
+    const res = await fetch(RSS2JSON_ENDPOINT + encodeURIComponent(feed.url));
+    const data = await res.json();
+    if (data.status !== "ok") throw new Error(data.message || "feed error");
+    return data.items.map(item => ({
+      title: item.title,
+      link: item.link,
+      pubDate: item.pubDate ? new Date(item.pubDate) : null,
+      source: feed.name,
+      snippet: stripHtml(item.description).slice(0, 220)
+    }));
+  } catch (err) {
+    console.error("Failed to load", feed.name, err);
+    return [];
+  }
+}
+
+function render(items) {
+  const filter = sourceFilterEl.value;
+  let filtered = filter === "all" ? items : items.filter(i => i.source === filter);
+  if (alertOnly) filtered = filtered.filter(isAlertItem);
+
+  if (filtered.length === 0) {
+    resultsEl.innerHTML = `<div class="empty">${alertOnly ? "No zero-day / actively exploited alerts found." : "No items found."}</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = filtered.map(item => {
+    const alert = isAlertItem(item);
+    return `
+    <div class="item${alert ? " alert" : ""}">
+      <a href="${item.link}" target="_blank" rel="noopener">${item.title}</a>
+      <div class="meta">
+        <span class="source-tag">${item.source}</span>
+        ${alert ? '<span class="alert-tag">🔥 Actively Exploited / Zero-Day</span>' : ""}
+        <span>${item.pubDate ? item.pubDate.toLocaleString() : "unknown date"}</span>
+      </div>
+      ${item.snippet ? `<div class="snippet">${item.snippet}${item.snippet.length >= 220 ? "…" : ""}</div>` : ""}
+    </div>
+  `;
+  }).join("");
+}
+
+async function loadAll() {
+  statusEl.textContent = "Fetching…";
+  refreshBtn.disabled = true;
+
+  const results = await Promise.all(FEEDS.map(fetchFeed));
+  allItems = results.flat().sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+
+  // populate source filter (preserve current selection)
+  const current = sourceFilterEl.value;
+  sourceFilterEl.innerHTML = '<option value="all">All sources</option>' +
+    FEEDS.map(f => `<option value="${f.name}">${f.name}</option>`).join("");
+  sourceFilterEl.value = current || "all";
+
+  render(allItems);
+  statusEl.textContent = "Updated " + new Date().toLocaleTimeString();
+  refreshBtn.disabled = false;
+}
+
+sourceFilterEl.addEventListener("change", () => render(allItems));
+refreshBtn.addEventListener("click", loadAll);
+alertToggleEl.addEventListener("click", () => {
+  alertOnly = !alertOnly;
+  alertToggleEl.classList.toggle("active", alertOnly);
+  render(allItems);
+});
+
+const menuBtn = document.getElementById("menuBtn");
+const menuDropdown = document.getElementById("menuDropdown");
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = menuDropdown.classList.toggle("open");
+  menuBtn.setAttribute("aria-expanded", open);
+});
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("navMenu").contains(e.target)) {
+    menuDropdown.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+});
+
+loadAll();
+setInterval(loadAll, REFRESH_MS);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Notes</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d29;
+    --text: #e6e6e6;
+    --muted: #9aa0ac;
+    --accent: #4f9dff;
+    --border: #2a2e3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { margin: 0; font-size: 1.4rem; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  select, button, input[type=text] {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  input[type=text] { cursor: text; }
+  button:hover, select:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .menu { position: relative; display: inline-block; }
+  .menu-btn { font-size: 1.1rem; line-height: 1; padding: 8px 12px; }
+  .menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown a {
+    display: block;
+    padding: 10px 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .menu-dropdown a:hover { background: var(--bg); color: var(--accent); }
+  #status { color: var(--muted); font-size: 0.85rem; }
+  main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+  .layout { display: flex; flex-direction: column; gap: 20px; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 1rem; color: var(--text); }
+  .dropdown-panel { padding: 0; overflow: hidden; }
+  .dropdown-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .dropdown-toggle:hover { border-color: transparent; color: var(--accent); }
+  .dropdown-toggle .chevron { transition: transform 0.15s ease; color: var(--muted); }
+  .dropdown-panel.collapsed .dropdown-toggle .chevron { transform: rotate(-90deg); }
+  .dropdown-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+  }
+  .dropdown-panel.collapsed .dropdown-body { display: none; }
+  .filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .filters input[type=text] { flex: 1; min-width: 160px; }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    background: #24304a;
+    color: #8fc1ff;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .tag-chip:hover { border-color: var(--accent); }
+  .tag-chip.active { background: var(--accent); color: #0f1117; font-weight: 700; }
+  .tag-chip .count { color: var(--muted); font-weight: 400; }
+  .tag-chip.active .count { color: #0f1117; opacity: 0.7; }
+  .tag-cloud .clear-tags { background: none; border: 1px dashed var(--border); color: var(--muted); border-radius: 12px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer; }
+  .tag-cloud .clear-tags:hover { border-color: var(--accent); color: var(--accent); }
+  .breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; font-size: 0.85rem; }
+  .breadcrumbs .crumb { color: var(--accent); cursor: pointer; background: none; border: none; padding: 2px 4px; font-size: 0.85rem; }
+  .breadcrumbs .crumb:hover { text-decoration: underline; }
+  .breadcrumbs .sep { color: var(--muted); }
+  .breadcrumbs .target-label { color: var(--muted); margin-right: 4px; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .list-item {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    background: var(--bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .list-item:hover { border-color: var(--accent); }
+  .list-item.selected { border-color: var(--accent); background: #182338; }
+  .list-item.folder { font-weight: 600; }
+  .list-item.folder.active-target { border-color: var(--accent); }
+  .list-item.drag-over { border-color: #4fbf6d; background: #16241a; }
+  .list-item.dragging { opacity: 0.4; }
+  .list-item .chevron-toggle { display: inline-block; width: 14px; color: var(--muted); }
+  .list-item .name { font-weight: 600; font-size: 0.9rem; }
+  .list-item .desc { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+  .list-item .item-main { flex: 1; min-width: 0; }
+  .list-item .item-tags { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .mini-tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: #24304a;
+    color: #8fc1ff;
+  }
+  .row { margin-bottom: 10px; }
+  .row label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  .row input[type=text], .row select { width: 100%; }
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 55vh;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    padding: 10px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    resize: vertical;
+  }
+  .note-preview {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 55vh;
+    padding: 14px 16px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow-y: auto;
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .note-preview h1, .note-preview h2, .note-preview h3 { margin: 0.6em 0 0.3em; }
+  .note-preview p { margin: 0.4em 0; }
+  .note-preview ul { margin: 0.4em 0; padding-left: 1.4em; }
+  .note-preview code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; font-family: Consolas, monospace; }
+  .note-preview pre.note-code {
+    background: #0a0c11;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+  }
+  .note-preview pre.note-code code { background: none; padding: 0; }
+  .note-preview img.note-img {
+    max-width: 100%;
+    display: block;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .note-preview a { color: var(--accent); }
+  .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .lock-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #2a2416;
+    border: 1px solid #5c4f22;
+    color: #e0c874;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+  }
+  .lock-banner button {
+    background: #3a3220;
+    border: 1px solid #5c4f22;
+    color: #e0c874;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+  .lock-banner button:hover { border-color: #e0c874; }
+  .empty, .loading { color: var(--muted); text-align: center; padding: 20px; font-size: 0.9rem; }
+  .banner {
+    background: #24304a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+    color: #c4d6f5;
+  }
+  .banner code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; }
+  footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗒️ Notes</h1>
+  <div class="controls">
+    <button id="connectBtn">📁 Connect "notes" folder</button>
+    <button id="refreshBtn" disabled>Refresh</button>
+    <div class="menu" id="navMenu">
+      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <a href="vuln-feed.html">🛡️ Vulnerability Feed</a>
+        <a href="txtformat_local.html">📝 Text Formatter</a>
+        <a href="query-library.html">📚 Query Library</a>
+      </div>
+    </div>
+    <span id="status">Not connected</span>
+  </div>
+</header>
+
+<main>
+  <div class="banner" id="apiBanner"></div>
+
+  <div class="layout">
+    <div class="panel dropdown-panel" id="savedPanel">
+      <button class="dropdown-toggle" id="dropdownToggle">
+        <span>📂 Saved notes</span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="dropdown-body">
+        <div class="filters">
+          <input type="text" id="searchBox" placeholder="Search by title, content or tag…" />
+        </div>
+        <div class="tag-cloud" id="tagCloud"></div>
+        <div class="breadcrumbs" id="breadcrumbs"></div>
+        <div class="list" id="list">
+          <div class="empty">Connect the folder to see saved notes.</div>
+        </div>
+        <div class="actions">
+          <button id="newBtn" disabled>➕ New note</button>
+          <button id="newFolderBtn" disabled>📁 New folder</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 id="editorTitle">Editor</h2>
+      <div class="lock-banner" id="lockBanner" style="display:none;">
+        🔒 This note is locked for viewing. Click Edit to make changes.
+        <button id="editBtn">✏️ Edit</button>
+      </div>
+      <div class="row">
+        <label for="nameInput">Note title (no extension)</label>
+        <input type="text" id="nameInput" placeholder="e.g. meeting-notes-2026-07-14" disabled />
+      </div>
+      <div class="row">
+        <label for="tagsInput">Tags (comma separated)</label>
+        <input type="text" id="tagsInput" placeholder="e.g. security, todo, ideas" disabled />
+      </div>
+      <div class="row">
+        <label for="contentInput">Note</label>
+        <textarea id="contentInput" placeholder="Write your note here. You can paste in code snippets, or paste in an image from your clipboard." disabled></textarea>
+        <div class="note-preview" id="notePreview" style="display:none;"></div>
+      </div>
+      <div class="actions">
+        <button id="saveBtn" disabled>💾 Save</button>
+        <button id="copyBtn" disabled>📋 Copy</button>
+        <button id="previewBtn" disabled>👁️ Preview</button>
+        <button id="deleteBtn" disabled>🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Reads and writes files directly on disk in the <code>notes</code> folder next to this page,
+  using your browser's File System Access API. Nothing is uploaded anywhere.
+</footer>
+
+<script>
+const listEl = document.getElementById("list");
+const statusEl = document.getElementById("status");
+const connectBtn = document.getElementById("connectBtn");
+const refreshBtn = document.getElementById("refreshBtn");
+const newBtn = document.getElementById("newBtn");
+const newFolderBtn = document.getElementById("newFolderBtn");
+const searchBox = document.getElementById("searchBox");
+const tagCloudEl = document.getElementById("tagCloud");
+const nameInput = document.getElementById("nameInput");
+const tagsInput = document.getElementById("tagsInput");
+const contentInput = document.getElementById("contentInput");
+const notePreview = document.getElementById("notePreview");
+const saveBtn = document.getElementById("saveBtn");
+const copyBtn = document.getElementById("copyBtn");
+const previewBtn = document.getElementById("previewBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const editBtn = document.getElementById("editBtn");
+const lockBanner = document.getElementById("lockBanner");
+const editorTitle = document.getElementById("editorTitle");
+const apiBanner = document.getElementById("apiBanner");
+const savedPanel = document.getElementById("savedPanel");
+const dropdownToggle = document.getElementById("dropdownToggle");
+const breadcrumbsEl = document.getElementById("breadcrumbs");
+
+dropdownToggle.addEventListener("click", () => {
+  savedPanel.classList.toggle("collapsed");
+});
+
+const SUPPORTED = "showDirectoryPicker" in window;
+const DB_NAME = "notes-db";
+const STORE_NAME = "handles";
+const HANDLE_KEY = "notesFolder";
+const TAG_LINE_RE = /^<!--\s*tags:\s*(.*?)\s*-->\s*\n?/i;
+
+let rootNode = null;           // { name, handle, kind:'directory', expanded, children, parentNode, depth }
+let targetFolderNode = null;   // folder where new notes / new folders are created
+let currentFile = null;        // node of the currently open file
+let editLocked = false;        // whether the editor is locked for viewing only
+let draggedNode = null;        // file node currently being dragged
+let activeTags = new Set();    // tags currently selected for filtering (AND)
+let previewMode = false;       // whether the note preview (rendered markdown + images) is showing
+let previewObjectUrls = [];    // blob object URLs created for the current preview, revoked on next render
+let savedHandle = null;        // directory handle restored from IndexedDB (may need re-granted permission)
+
+if (!SUPPORTED) {
+  apiBanner.innerHTML = "⚠️ Your browser doesn't support the File System Access API needed to read/write local files directly. " +
+    "Please use a recent version of <strong>Chrome</strong> or <strong>Edge</strong>. " +
+    "You can still drop <code>.md</code> files into the <code>notes</code> folder manually for later use.";
+  connectBtn.disabled = true;
+} else {
+  apiBanner.innerHTML = "Click <strong>Connect \"notes\" folder</strong> and pick the <code>notes</code> folder next to this page. " +
+    "The connection is remembered for next time (your browser may ask to confirm permission again). " +
+    "Click a folder to expand it inline, drag notes onto a folder to move them there, and add tags to make notes searchable. " +
+    "You can also paste images from your clipboard straight into a note and click <strong>👁️ Preview</strong> to see them rendered inline.";
+}
+
+// --- IndexedDB helpers to persist the directory handle across sessions ---
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Splits a note file's raw text into { tags: [...], body: "..." }
+function parseNote(text) {
+  const match = text.match(TAG_LINE_RE);
+  if (!match) return { tags: [], body: text };
+  const tags = match[1].split(",").map(t => t.trim()).filter(Boolean);
+  return { tags, body: text.slice(match[0].length) };
+}
+
+// Recombines tags + body back into raw file text for saving
+function buildNoteFile(tags, body) {
+  if (!tags.length) return body;
+  return `<!-- tags: ${tags.join(", ")} -->\n${body}`;
+}
+
+async function readPreview(handle) {
+  try {
+    const file = await handle.getFile();
+    const text = await file.text();
+    const { tags, body } = parseNote(text);
+    const firstLine = body.split("\n").find(l => l.trim().length > 0) || "";
+    const description = firstLine.replace(/^#+\s*/, "").trim().slice(0, 140);
+    return { tags, description };
+  } catch {
+    return { tags: [], description: "" };
+  }
+}
+
+// Fetches (or refetches) the direct children of a folder node and caches them on node.children
+async function loadChildren(node) {
+  const folders = [];
+  const filesArr = [];
+  for await (const [name, handle] of node.handle.entries()) {
+    if (handle.kind === "directory") {
+      if (name.toLowerCase() === "attachments") continue; // hide the pasted-image storage folder
+      folders.push({ name, handle, kind: "directory", expanded: false, children: null, parentNode: node, depth: node.depth + 1 });
+    } else {
+      if (name.toLowerCase() === "readme.md") continue; // skip readme
+      if (!name.toLowerCase().endsWith(".md")) continue; // only show note files
+      const { tags, description } = await readPreview(handle);
+      filesArr.push({ name, handle, kind: "file", tags, description, parentNode: node, depth: node.depth + 1 });
+    }
+  }
+  folders.sort((a, b) => a.name.localeCompare(b.name));
+  filesArr.sort((a, b) => a.name.localeCompare(b.name));
+  node.children = [...folders, ...filesArr];
+}
+
+// Recursively loads every folder's children so the full tag cloud/search can see everything,
+// without changing which folders are visually expanded.
+async function loadAllDescendants(node) {
+  if (node.children === null) await loadChildren(node);
+  for (const child of node.children) {
+    if (child.kind === "directory") await loadAllDescendants(child);
+  }
+}
+
+function pathOf(node) {
+  const parts = [];
+  let n = node;
+  while (n) { parts.unshift(n); n = n.parentNode; }
+  return parts;
+}
+
+async function loadFiles() {
+  if (!rootNode) return;
+  statusEl.textContent = "Loading…";
+  await loadAllDescendants(rootNode);
+  renderTargetPath();
+  renderTagCloud();
+  renderList();
+  const fileCount = countAllFiles(rootNode);
+  statusEl.textContent = `Connected · ${fileCount} note${fileCount === 1 ? "" : "s"} total`;
+}
+
+function countAllFiles(node) {
+  if (!node.children) return 0;
+  let count = 0;
+  for (const child of node.children) {
+    if (child.kind === "file") count++;
+    else count += countAllFiles(child);
+  }
+  return count;
+}
+
+function collectAllFiles(node, out) {
+  if (!node.children) return;
+  for (const child of node.children) {
+    if (child.kind === "file") out.push(child);
+    else collectAllFiles(child, out);
+  }
+}
+
+function renderTagCloud() {
+  const counts = new Map();
+  const allFiles = [];
+  collectAllFiles(rootNode, allFiles);
+  allFiles.forEach(f => f.tags.forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+
+  const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b));
+  tagCloudEl.innerHTML = "";
+  if (tags.length === 0) return;
+
+  tags.forEach(tag => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "tag-chip" + (activeTags.has(tag) ? " active" : "");
+    chip.innerHTML = `${tag} <span class="count">${counts.get(tag)}</span>`;
+    chip.addEventListener("click", () => {
+      if (activeTags.has(tag)) activeTags.delete(tag); else activeTags.add(tag);
+      renderTagCloud();
+      renderList();
+    });
+    tagCloudEl.appendChild(chip);
+  });
+
+  if (activeTags.size > 0) {
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "clear-tags";
+    clearBtn.textContent = "✕ Clear tags";
+    clearBtn.addEventListener("click", () => {
+      activeTags.clear();
+      renderTagCloud();
+      renderList();
+    });
+    tagCloudEl.appendChild(clearBtn);
+  }
+}
+
+function renderTargetPath() {
+  const parts = pathOf(targetFolderNode);
+  breadcrumbsEl.innerHTML = '<span class="target-label">Saving new notes to:</span>' + parts.map((p, i) => {
+    const isLast = i === parts.length - 1;
+    return `<button class="crumb" data-depth="${i}" ${isLast ? 'style="color:var(--text);cursor:default;text-decoration:none;"' : ""}>${i === 0 ? "🏠 " : ""}${p.name}</button>` +
+      (isLast ? "" : '<span class="sep">/</span>');
+  }).join("");
+  breadcrumbsEl.querySelectorAll(".crumb").forEach(btn => {
+    const depth = Number(btn.dataset.depth);
+    if (depth === parts.length - 1) return;
+    btn.addEventListener("click", () => {
+      targetFolderNode = parts[depth];
+      renderTargetPath();
+      renderList();
+    });
+  });
+}
+
+// Flattens the currently expanded tree into a depth-ordered list for rendering
+function flattenVisible(node, depth, out) {
+  if (!node.children) return;
+  for (const child of node.children) {
+    out.push({ node: child, depth });
+    if (child.kind === "directory" && child.expanded && child.children) {
+      flattenVisible(child, depth + 1, out);
+    }
+  }
+}
+
+// Flattens the entire tree regardless of expanded state, used while filtering
+// so notes inside collapsed/unexpanded folders can still be found.
+function flattenAll(node, depth, out) {
+  if (!node.children) return;
+  for (const child of node.children) {
+    out.push({ node: child, depth });
+    if (child.kind === "directory" && child.children) {
+      flattenAll(child, depth + 1, out);
+    }
+  }
+}
+
+function renderList() {
+  const q = searchBox.value.trim().toLowerCase();
+  const isFiltering = !!q || activeTags.size > 0;
+  const flat = [];
+  if (isFiltering) {
+    flattenAll(rootNode, 0, flat);
+  } else {
+    flattenVisible(rootNode, 0, flat);
+  }
+
+  const filtered = flat.filter(({ node }) => {
+    if (node.kind === "directory") return !isFiltering && (!q || node.name.toLowerCase().includes(q));
+    const matchesSearch = !q || node.name.toLowerCase().includes(q) ||
+      node.description.toLowerCase().includes(q) ||
+      node.tags.some(t => t.toLowerCase().includes(q));
+    const matchesTags = activeTags.size === 0 || [...activeTags].every(t => node.tags.includes(t));
+    return matchesSearch && matchesTags;
+  });
+
+  listEl.innerHTML = "";
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="empty">Nothing here yet.</div>';
+    return;
+  }
+
+  filtered.forEach(({ node, depth }) => {
+    const row = document.createElement("div");
+    row.style.marginLeft = (depth * 20) + "px";
+
+    if (node.kind === "directory") {
+      row.className = "list-item folder" + (node === targetFolderNode ? " active-target" : "");
+      const chevron = node.expanded ? "▾" : "▸";
+      row.innerHTML = `<div class="item-main"><span class="chevron-toggle">${chevron}</span>📁 ${node.name}</div>`;
+      row.addEventListener("click", () => toggleFolder(node));
+      row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
+      row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+      row.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        row.classList.remove("drag-over");
+        if (draggedNode) await moveFileToFolder(draggedNode, node);
+      });
+    } else {
+      row.className = "list-item" + (currentFile === node ? " selected" : "");
+      row.draggable = true;
+      row.title = "Drag onto a folder to move it there";
+      const tagsHtml = node.tags.length
+        ? `<div class="item-tags">${node.tags.map(t => `<span class="mini-tag">${t}</span>`).join("")}</div>`
+        : "";
+      row.innerHTML = `
+        <div class="item-main">
+          <div class="name">📝 ${node.name.replace(/\.md$/i, "")}</div>
+          ${node.description ? `<div class="desc">${node.description}</div>` : ""}
+          ${tagsHtml}
+        </div>
+      `;
+      row.addEventListener("click", () => openFile(node));
+      row.addEventListener("dragstart", (e) => {
+        draggedNode = node;
+        row.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", node.name);
+      });
+      row.addEventListener("dragend", () => {
+        draggedNode = null;
+        row.classList.remove("dragging");
+      });
+    }
+    listEl.appendChild(row);
+  });
+}
+
+async function toggleFolder(node) {
+  if (node.children === null) await loadChildren(node);
+  node.expanded = !node.expanded;
+  targetFolderNode = node;
+  renderTargetPath();
+  renderList();
+}
+
+async function moveFileToFolder(fileNode, folderNode) {
+  if (!fileNode || !folderNode || fileNode.parentNode === folderNode) return;
+  try {
+    const file = await fileNode.handle.getFile();
+    const text = await file.text();
+    const newHandle = await folderNode.handle.getFileHandle(fileNode.name, { create: true });
+    const writable = await newHandle.createWritable();
+    await writable.write(text);
+    await writable.close();
+    await fileNode.parentNode.handle.removeEntry(fileNode.name);
+
+    await loadChildren(fileNode.parentNode);
+    await loadChildren(folderNode);
+    if (currentFile === fileNode) resetEditor(true);
+
+    statusEl.textContent = `Moved "${fileNode.name}" into "${folderNode.name}"`;
+    renderTargetPath();
+    renderTagCloud();
+    renderList();
+  } catch (err) {
+    alert("Could not move file: " + err.message);
+  }
+}
+
+function lockEditor() {
+  editLocked = true;
+  nameInput.readOnly = true;
+  tagsInput.readOnly = true;
+  contentInput.readOnly = true;
+  saveBtn.disabled = true;
+  lockBanner.style.display = "flex";
+}
+
+function unlockEditor() {
+  editLocked = false;
+  nameInput.readOnly = false;
+  tagsInput.readOnly = false;
+  contentInput.readOnly = false;
+  saveBtn.disabled = false;
+  lockBanner.style.display = "none";
+}
+
+editBtn.addEventListener("click", () => {
+  exitPreview();
+  unlockEditor();
+});
+
+async function openFile(node) {
+  const file = await node.handle.getFile();
+  const text = await file.text();
+  const { tags, body } = parseNote(text);
+  currentFile = node;
+  editorTitle.textContent = "Editing: " + node.name.replace(/\.md$/i, "");
+  nameInput.value = node.name.replace(/\.md$/i, "");
+  tagsInput.value = tags.join(", ");
+  contentInput.value = body;
+  deleteBtn.disabled = false;
+  lockEditor();
+  await enterPreview();
+  renderList();
+  savedPanel.classList.add("collapsed");
+}
+
+function resetEditor(silent) {
+  currentFile = null;
+  editorTitle.textContent = "New note";
+  nameInput.value = "";
+  tagsInput.value = "";
+  contentInput.value = "";
+  deleteBtn.disabled = true;
+  exitPreview();
+  unlockEditor();
+  if (!silent) {
+    renderList();
+    savedPanel.classList.add("collapsed");
+  }
+}
+
+async function connectFolder(handle) {
+  rootNode = { name: handle.name || "notes", handle, kind: "directory", expanded: true, children: null, parentNode: null, depth: 0 };
+  targetFolderNode = rootNode;
+  savedHandle = handle;
+  await idbSet(HANDLE_KEY, handle);
+  refreshBtn.disabled = false;
+  newBtn.disabled = false;
+  newFolderBtn.disabled = false;
+  nameInput.disabled = false;
+  tagsInput.disabled = false;
+  contentInput.disabled = false;
+  saveBtn.disabled = false;
+  copyBtn.disabled = false;
+  previewBtn.disabled = false;
+  connectBtn.textContent = "📁 Reconnect folder";
+  await loadFiles();
+}
+
+connectBtn.addEventListener("click", async () => {
+  try {
+    // If we already have a remembered folder, just re-request permission on it
+    // instead of forcing the user to pick the folder again.
+    if (savedHandle) {
+      const perm = await savedHandle.requestPermission({ mode: "readwrite" });
+      if (perm === "granted") {
+        await connectFolder(savedHandle);
+        return;
+      }
+    }
+    const handle = await window.showDirectoryPicker({ id: "notes-library", startIn: "documents" });
+    await connectFolder(handle);
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      statusEl.textContent = "Could not access folder: " + err.message;
+    }
+  }
+});
+
+refreshBtn.addEventListener("click", loadFiles);
+newBtn.addEventListener("click", () => resetEditor(false));
+searchBox.addEventListener("input", renderList);
+
+newFolderBtn.addEventListener("click", async () => {
+  if (!targetFolderNode) return;
+  const name = prompt(`New folder name (inside "${targetFolderNode.name}"):`);
+  if (!name) return;
+  try {
+    await targetFolderNode.handle.getDirectoryHandle(name.trim(), { create: true });
+    targetFolderNode.expanded = true;
+    await loadChildren(targetFolderNode);
+    renderTargetPath();
+    renderList();
+  } catch (err) {
+    alert("Could not create folder: " + err.message);
+  }
+});
+
+saveBtn.addEventListener("click", async () => {
+  const rawName = nameInput.value.trim();
+  if (!rawName) { alert("Please enter a note title."); return; }
+  const fileName = rawName.replace(/\.md$/i, "") + ".md";
+  const tags = tagsInput.value.split(",").map(t => t.trim()).filter(Boolean);
+  const fileContent = buildNoteFile(tags, contentInput.value);
+
+  // Save into the current file's own folder if editing, otherwise the active target folder
+  const dir = currentFile ? currentFile.parentNode : targetFolderNode;
+  if (!dir) return;
+
+  // If renaming the file we opened, remove the old one
+  if (currentFile && currentFile.name !== fileName) {
+    try { await dir.handle.removeEntry(currentFile.name); } catch {}
+  }
+
+  const handle = await dir.handle.getFileHandle(fileName, { create: true });
+  const writable = await handle.createWritable();
+  await writable.write(fileContent);
+  await writable.close();
+
+  await loadChildren(dir);
+  currentFile = dir.children.find(e => e.kind === "file" && e.name === fileName) || null;
+  editorTitle.textContent = "Editing: " + fileName.replace(/\.md$/i, "");
+  deleteBtn.disabled = !currentFile;
+  lockEditor();
+  await enterPreview();
+  renderTargetPath();
+  renderTagCloud();
+  renderList();
+  statusEl.textContent = `Saved "${fileName}"`;
+});
+
+copyBtn.addEventListener("click", async () => {
+  await navigator.clipboard.writeText(contentInput.value);
+  const original = copyBtn.textContent;
+  copyBtn.textContent = "✅ Copied";
+  setTimeout(() => (copyBtn.textContent = original), 1200);
+});
+
+// --- Pasted images ---
+// Saves a pasted image into an "attachments" subfolder next to the note and inserts a
+// markdown image reference at the cursor. The attachments folder is hidden from the note tree.
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const value = textarea.value;
+  textarea.value = value.slice(0, start) + text + value.slice(end);
+  const pos = start + text.length;
+  textarea.selectionStart = textarea.selectionEnd = pos;
+}
+
+contentInput.addEventListener("paste", async (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  let imageItem = null;
+  for (const item of items) {
+    if (item.type && item.type.startsWith("image/")) { imageItem = item; break; }
+  }
+  if (!imageItem) return; // let normal text paste happen
+
+  e.preventDefault();
+  if (editLocked) { alert("Click Edit before pasting an image."); return; }
+  const folderNode = currentFile ? currentFile.parentNode : targetFolderNode;
+  if (!folderNode) { alert("Connect a folder first."); return; }
+
+  const blob = imageItem.getAsFile();
+  const ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg");
+  const filename = `image-${Date.now()}.${ext}`;
+  try {
+    const attachDir = await folderNode.handle.getDirectoryHandle("attachments", { create: true });
+    const fileHandle = await attachDir.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    insertAtCursor(contentInput, `![image](attachments/${filename})\n`);
+  } catch (err) {
+    alert("Could not save pasted image: " + err.message);
+  }
+});
+
+// --- Note preview (lightweight markdown + local image rendering) ---
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function mdToHtml(md) {
+  let html = escapeHtml(md);
+
+  // fenced code blocks
+  html = html.replace(/```[a-zA-Z0-9]*\n([\s\S]*?)```/g, (m, code) => `<pre class="note-code"><code>${code}</code></pre>`);
+
+  // images ![alt](src) — src is resolved to a blob URL after insertion into the DOM
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) => `<img class="note-img" data-relsrc="${src}" alt="${alt}" />`);
+
+  // links [text](url)
+  html = html.replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // headings
+  html = html.replace(/^### (.*)$/gm, "<h3>$1</h3>");
+  html = html.replace(/^## (.*)$/gm, "<h2>$1</h2>");
+  html = html.replace(/^# (.*)$/gm, "<h1>$1</h1>");
+
+  // bold / italic / inline code
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  // consecutive "- " lines become a list
+  html = html.replace(/(^|\n)((?:- .*(?:\n|$))+)/g, (m, pre, block) => {
+    const items = block.trim().split("\n").map(l => `<li>${l.replace(/^- /, "")}</li>`).join("");
+    return `${pre}<ul>${items}</ul>`;
+  });
+
+  // wrap remaining bare lines in paragraphs
+  html = html.split("\n").map(line => {
+    if (/^\s*$/.test(line)) return "";
+    if (/^\s*<(h1|h2|h3|ul|li|pre|img)/.test(line)) return line;
+    return `<p>${line}</p>`;
+  }).join("\n");
+
+  return html;
+}
+
+async function resolveLocalImageSrc(folderNode, relPath) {
+  if (/^(https?:)?\/\//i.test(relPath)) return relPath;
+  const parts = relPath.split("/").filter(Boolean);
+  let dirHandle = folderNode.handle;
+  for (let i = 0; i < parts.length - 1; i++) {
+    dirHandle = await dirHandle.getDirectoryHandle(parts[i]);
+  }
+  const fileHandle = await dirHandle.getFileHandle(parts[parts.length - 1]);
+  const file = await fileHandle.getFile();
+  return URL.createObjectURL(file);
+}
+
+async function renderPreview() {
+  previewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  previewObjectUrls = [];
+
+  notePreview.innerHTML = mdToHtml(contentInput.value);
+  const folderNode = currentFile ? currentFile.parentNode : targetFolderNode;
+  const imgs = notePreview.querySelectorAll("img[data-relsrc]");
+  for (const img of imgs) {
+    const relPath = img.getAttribute("data-relsrc");
+    try {
+      const url = await resolveLocalImageSrc(folderNode, relPath);
+      img.src = url;
+      if (url.startsWith("blob:")) previewObjectUrls.push(url);
+    } catch {
+      img.alt = (img.alt || "image") + " (not found)";
+    }
+  }
+}
+
+function exitPreview() {
+  previewMode = false;
+  contentInput.style.display = "";
+  notePreview.style.display = "none";
+  previewBtn.textContent = "👁️ Preview";
+  previewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  previewObjectUrls = [];
+}
+
+async function enterPreview() {
+  previewMode = true;
+  await renderPreview();
+  contentInput.style.display = "none";
+  notePreview.style.display = "block";
+  previewBtn.textContent = "✏️ Back to editing";
+}
+
+previewBtn.addEventListener("click", async () => {
+  if (previewMode) {
+    exitPreview();
+  } else {
+    await enterPreview();
+  }
+});
+
+deleteBtn.addEventListener("click", async () => {
+  if (!currentFile) return;
+  if (!confirm(`Delete "${currentFile.name}"? This cannot be undone.`)) return;
+  await currentFile.parentNode.handle.removeEntry(currentFile.name);
+  await loadChildren(currentFile.parentNode);
+  resetEditor(true);
+  renderTagCloud();
+  renderList();
+});
+
+// Try to restore a previously connected folder
+(async () => {
+  if (!SUPPORTED) return;
+  try {
+    const saved = await idbGet(HANDLE_KEY);
+    if (!saved) return;
+    savedHandle = saved;
+    const perm = await saved.queryPermission({ mode: "readwrite" });
+    if (perm === "granted") {
+      await connectFolder(saved);
+    } else {
+      connectBtn.textContent = "📁 Reconnect folder";
+      statusEl.textContent = `Folder "${saved.name}" previously connected — click Reconnect to re-grant access (no need to pick it again).`;
+    }
+  } catch (err) {
+    console.warn("Could not restore folder handle", err);
+  }
+})();
+
+const menuBtn = document.getElementById("menuBtn");
+const menuDropdown = document.getElementById("menuDropdown");
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = menuDropdown.classList.toggle("open");
+  menuBtn.setAttribute("aria-expanded", open);
+});
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("navMenu").contains(e.target)) {
+    menuDropdown.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+});
+</script>
+
+</body>
+</html>

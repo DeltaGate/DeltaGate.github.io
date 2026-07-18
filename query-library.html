@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Query Library</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d29;
+    --text: #e6e6e6;
+    --muted: #9aa0ac;
+    --accent: #4f9dff;
+    --border: #2a2e3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { margin: 0; font-size: 1.4rem; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  select, button, input[type=text] {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  input[type=text] { cursor: text; }
+  button:hover, select:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .menu { position: relative; display: inline-block; }
+  .menu-btn { font-size: 1.1rem; line-height: 1; padding: 8px 12px; }
+  .menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown a {
+    display: block;
+    padding: 10px 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .menu-dropdown a:hover { background: var(--bg); color: var(--accent); }
+  #status { color: var(--muted); font-size: 0.85rem; }
+  main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+  .layout { display: flex; flex-direction: column; gap: 20px; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 1rem; color: var(--text); }
+  .dropdown-panel { padding: 0; overflow: hidden; }
+  .dropdown-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .dropdown-toggle:hover { border-color: transparent; color: var(--accent); }
+  .dropdown-toggle .chevron { transition: transform 0.15s ease; color: var(--muted); }
+  .dropdown-panel.collapsed .dropdown-toggle .chevron { transform: rotate(-90deg); }
+  .dropdown-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+  }
+  .dropdown-panel.collapsed .dropdown-body { display: none; }
+  .filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters input[type=text] { flex: 1; min-width: 160px; }
+  .breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; font-size: 0.85rem; }
+  .breadcrumbs .crumb { color: var(--accent); cursor: pointer; background: none; border: none; padding: 2px 4px; font-size: 0.85rem; }
+  .breadcrumbs .crumb:hover { text-decoration: underline; }
+  .breadcrumbs .sep { color: var(--muted); }
+  .breadcrumbs .target-label { color: var(--muted); margin-right: 4px; }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .list-item {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    background: var(--bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .list-item:hover { border-color: var(--accent); }
+  .list-item.selected { border-color: var(--accent); background: #182338; }
+  .list-item.folder { font-weight: 600; }
+  .list-item.folder.active-target { border-color: var(--accent); }
+  .list-item.drag-over { border-color: #4fbf6d; background: #16241a; }
+  .list-item.dragging { opacity: 0.4; }
+  .list-item .chevron-toggle { display: inline-block; width: 14px; color: var(--muted); }
+  .list-item .name { font-weight: 600; font-size: 0.9rem; }
+  .list-item .desc { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+  .list-item .item-main { flex: 1; min-width: 0; }
+  .list-item .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .list-item .item-actions button {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+  }
+  .lang-tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .lang-sql { background: #24304a; color: #8fc1ff; }
+  .lang-kql { background: #2a3d24; color: #a8e08f; }
+  .lang-other { background: #333; color: var(--muted); }
+  .row { margin-bottom: 10px; }
+  .row label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  .row input[type=text], .row select { width: 100%; }
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 55vh;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    padding: 10px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    resize: vertical;
+  }
+  .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .lock-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #2a2416;
+    border: 1px solid #5c4f22;
+    color: #e0c874;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+  }
+  .lock-banner button {
+    background: #3a3220;
+    border: 1px solid #5c4f22;
+    color: #e0c874;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+  .lock-banner button:hover { border-color: #e0c874; }
+  .empty, .loading { color: var(--muted); text-align: center; padding: 20px; font-size: 0.9rem; }
+  .banner {
+    background: #24304a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+    color: #c4d6f5;
+  }
+  .banner code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; }
+  footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 20px; }
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 760px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { margin: 0; font-size: 1.1rem; }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .modal-close:hover { color: var(--text); border-color: transparent; }
+  .modal-tabs { display: flex; gap: 6px; padding: 12px 20px 0; }
+  .modal-tab {
+    background: var(--bg);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 8px 16px;
+    border-radius: 6px 6px 0 0;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .modal-tab.active { color: var(--text); background: var(--card); border-color: var(--accent); }
+  .modal-search { padding: 12px 20px 0; }
+  .modal-search input { width: 100%; }
+  .modal-body { padding: 16px 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .cheat-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .cheat-card .cheat-title { font-weight: 700; font-size: 0.92rem; color: var(--text); margin-bottom: 4px; }
+  .cheat-card .cheat-desc { color: var(--muted); font-size: 0.82rem; margin-bottom: 8px; }
+  .cheat-card pre {
+    margin: 0;
+    background: #0a0c11;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: Consolas, monospace;
+    font-size: 0.8rem;
+    color: #c9e8ff;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .cheat-card .cheat-copy {
+    margin-top: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Query Library</h1>
+  <div class="controls">
+    <button id="connectBtn">📁 Connect "queries" folder</button>
+    <button id="refreshBtn" disabled>Refresh</button>
+    <div class="menu" id="navMenu">
+      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <a href="vuln-feed.html">🛡️ Vulnerability Feed</a>
+        <a href="txtformat_local.html">📝 Text Formatter</a>
+        <a href="notes.html">🗒️ Notes</a>
+      </div>
+    </div>
+    <span id="status">Not connected</span>
+  </div>
+</header>
+
+<main>
+  <div class="banner" id="apiBanner"></div>
+
+  <div class="layout">
+    <div class="panel dropdown-panel" id="savedPanel">
+      <button class="dropdown-toggle" id="dropdownToggle">
+        <span>📂 Saved queries</span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="dropdown-body">
+        <div class="filters">
+          <input type="text" id="searchBox" placeholder="Search by name…" />
+          <select id="langFilter">
+            <option value="all">All types</option>
+            <option value="sql">SQL</option>
+            <option value="kql">KQL</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="breadcrumbs" id="breadcrumbs"></div>
+        <div class="list" id="list">
+          <div class="empty">Connect the folder to see saved queries.</div>
+        </div>
+        <div class="actions">
+          <button id="newBtn" disabled>➕ New query</button>
+          <button id="newFolderBtn" disabled>📁 New folder</button>
+          <button id="cheatSheetBtn">📖 Cheat Sheets</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 id="editorTitle">Editor</h2>
+      <div class="lock-banner" id="lockBanner" style="display:none;">
+        🔒 This query is locked for viewing. Click Edit to make changes.
+        <button id="editBtn">✏️ Edit</button>
+      </div>
+      <div class="row">
+        <label for="nameInput">File name (no extension)</label>
+        <input type="text" id="nameInput" placeholder="e.g. failed-signins-24h" disabled />
+      </div>
+      <div class="row">
+        <label for="langInput">Language</label>
+        <select id="langInput" disabled>
+          <option value="sql">SQL (.sql)</option>
+          <option value="kql">KQL (.kql)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="contentInput">Query</label>
+        <textarea id="contentInput" placeholder="-- optional one-line description on the first comment line
+SELECT * FROM ..." disabled></textarea>
+      </div>
+      <div class="actions">
+        <button id="saveBtn" disabled>💾 Save</button>
+        <button id="copyBtn" disabled>📋 Copy</button>
+        <button id="deleteBtn" disabled>🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="cheatModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📖 Cheat Sheets</h2>
+      <button id="cheatModalClose" class="modal-close">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabSql" data-lang="sql">SQL</button>
+      <button class="modal-tab" id="tabKql" data-lang="kql">KQL</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="cheatSearch" placeholder="Filter commands…" />
+    </div>
+    <div class="modal-body" id="cheatBody"></div>
+  </div>
+</div>
+
+<footer>
+  Reads and writes files directly on disk in the <code>queries</code> folder next to this page,
+  using your browser's File System Access API. Nothing is uploaded anywhere.
+</footer>
+
+<script>
+const listEl = document.getElementById("list");
+const statusEl = document.getElementById("status");
+const connectBtn = document.getElementById("connectBtn");
+const refreshBtn = document.getElementById("refreshBtn");
+const newBtn = document.getElementById("newBtn");
+const newFolderBtn = document.getElementById("newFolderBtn");
+const cheatSheetBtn = document.getElementById("cheatSheetBtn");
+const cheatModalOverlay = document.getElementById("cheatModalOverlay");
+const cheatModalClose = document.getElementById("cheatModalClose");
+const cheatBody = document.getElementById("cheatBody");
+const cheatSearch = document.getElementById("cheatSearch");
+const tabSql = document.getElementById("tabSql");
+const tabKql = document.getElementById("tabKql");
+const searchBox = document.getElementById("searchBox");
+const langFilter = document.getElementById("langFilter");
+const nameInput = document.getElementById("nameInput");
+const langInput = document.getElementById("langInput");
+const contentInput = document.getElementById("contentInput");
+const saveBtn = document.getElementById("saveBtn");
+const copyBtn = document.getElementById("copyBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const editBtn = document.getElementById("editBtn");
+const lockBanner = document.getElementById("lockBanner");
+const editorTitle = document.getElementById("editorTitle");
+const apiBanner = document.getElementById("apiBanner");
+const savedPanel = document.getElementById("savedPanel");
+const dropdownToggle = document.getElementById("dropdownToggle");
+const breadcrumbsEl = document.getElementById("breadcrumbs");
+
+dropdownToggle.addEventListener("click", () => {
+  savedPanel.classList.toggle("collapsed");
+});
+
+const SUPPORTED = "showDirectoryPicker" in window;
+const DB_NAME = "query-library-db";
+const STORE_NAME = "handles";
+const HANDLE_KEY = "queriesFolder";
+
+let rootNode = null;           // { name, handle, kind:'directory', expanded, children, parentNode, depth }
+let targetFolderNode = null;   // folder where new queries / new folders are created
+let currentFile = null;        // node of the currently open file
+let editLocked = false;        // whether the editor is locked for viewing only
+let draggedNode = null;        // file node currently being dragged
+let savedHandle = null;        // directory handle restored from IndexedDB (may need re-granted permission)
+
+if (!SUPPORTED) {
+  apiBanner.innerHTML = "⚠️ Your browser doesn't support the File System Access API needed to read/write local files directly. " +
+    "Please use a recent version of <strong>Chrome</strong> or <strong>Edge</strong>. " +
+    "You can still drop <code>.sql</code>/<code>.kql</code> files into the <code>queries</code> folder manually for later use.";
+  connectBtn.disabled = true;
+} else {
+  apiBanner.innerHTML = "Click <strong>Connect \"queries\" folder</strong> and pick the <code>queries</code> folder next to this page. " +
+    "The connection is remembered for next time (your browser may ask to confirm permission again). " +
+    "Click a folder to expand it inline, and drag queries onto a folder to move them there.";
+}
+
+// --- IndexedDB helpers to persist the directory handle across sessions ---
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function extLang(name) {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".sql")) return "sql";
+  if (lower.endsWith(".kql")) return "kql";
+  return "other";
+}
+
+function langTag(lang) {
+  const cls = lang === "sql" ? "lang-sql" : lang === "kql" ? "lang-kql" : "lang-other";
+  return `<span class="lang-tag ${cls}">${lang.toUpperCase()}</span>`;
+}
+
+async function readDescription(handle) {
+  try {
+    const file = await handle.getFile();
+    const text = await file.text();
+    const firstLine = text.split("\n")[0].trim();
+    if (firstLine.startsWith("--") || firstLine.startsWith("//")) {
+      return firstLine.replace(/^--|^\/\//, "").trim();
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+// Fetches (or refetches) the direct children of a folder node and caches them on node.children
+async function loadChildren(node) {
+  const folders = [];
+  const filesArr = [];
+  for await (const [name, handle] of node.handle.entries()) {
+    if (handle.kind === "directory") {
+      folders.push({ name, handle, kind: "directory", expanded: false, children: null, parentNode: node, depth: node.depth + 1 });
+    } else {
+      if (name.toLowerCase() === "readme.md") continue; // skip readme
+      const description = await readDescription(handle);
+      filesArr.push({ name, handle, kind: "file", ext: extLang(name), description, parentNode: node, depth: node.depth + 1 });
+    }
+  }
+  folders.sort((a, b) => a.name.localeCompare(b.name));
+  filesArr.sort((a, b) => a.name.localeCompare(b.name));
+  node.children = [...folders, ...filesArr];
+}
+
+function pathOf(node) {
+  const parts = [];
+  let n = node;
+  while (n) { parts.unshift(n); n = n.parentNode; }
+  return parts;
+}
+
+async function loadFiles() {
+  if (!rootNode) return;
+  statusEl.textContent = "Loading…";
+  await loadChildren(rootNode);
+  renderTargetPath();
+  renderList();
+  const fileCount = countFiles(rootNode);
+  statusEl.textContent = `Connected · ${fileCount} quer${fileCount === 1 ? "y" : "ies"} total`;
+}
+
+function countFiles(node) {
+  if (!node.children) return 0;
+  let count = 0;
+  for (const child of node.children) {
+    if (child.kind === "file") count++;
+    else if (child.expanded && child.children) count += countFiles(child);
+  }
+  return count;
+}
+
+function renderTargetPath() {
+  const parts = pathOf(targetFolderNode);
+  breadcrumbsEl.innerHTML = '<span class="target-label">Saving new queries to:</span>' + parts.map((p, i) => {
+    const isLast = i === parts.length - 1;
+    return `<button class="crumb" data-depth="${i}" ${isLast ? 'style="color:var(--text);cursor:default;text-decoration:none;"' : ""}>${i === 0 ? "🏠 " : ""}${p.name}</button>` +
+      (isLast ? "" : '<span class="sep">/</span>');
+  }).join("");
+  breadcrumbsEl.querySelectorAll(".crumb").forEach(btn => {
+    const depth = Number(btn.dataset.depth);
+    if (depth === parts.length - 1) return;
+    btn.addEventListener("click", () => {
+      targetFolderNode = parts[depth];
+      renderTargetPath();
+      renderList();
+    });
+  });
+}
+
+// Flattens the currently expanded tree into a depth-ordered list for rendering
+function flattenVisible(node, depth, out) {
+  if (!node.children) return;
+  for (const child of node.children) {
+    out.push({ node: child, depth });
+    if (child.kind === "directory" && child.expanded && child.children) {
+      flattenVisible(child, depth + 1, out);
+    }
+  }
+}
+
+function renderList() {
+  const q = searchBox.value.trim().toLowerCase();
+  const langWanted = langFilter.value;
+  const flat = [];
+  flattenVisible(rootNode, 0, flat);
+
+  const filtered = flat.filter(({ node }) => {
+    if (node.kind === "directory") return !q || node.name.toLowerCase().includes(q);
+    const matchesSearch = !q || node.name.toLowerCase().includes(q) || node.description.toLowerCase().includes(q);
+    const matchesLang = langWanted === "all" || node.ext === langWanted;
+    return matchesSearch && matchesLang;
+  });
+
+  listEl.innerHTML = "";
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="empty">Nothing here yet.</div>';
+    return;
+  }
+
+  filtered.forEach(({ node, depth }) => {
+    const row = document.createElement("div");
+    row.style.marginLeft = (depth * 20) + "px";
+
+    if (node.kind === "directory") {
+      row.className = "list-item folder" + (node === targetFolderNode ? " active-target" : "");
+      const chevron = node.expanded ? "▾" : "▸";
+      row.innerHTML = `<div class="item-main"><span class="chevron-toggle">${chevron}</span>📁 ${node.name}</div>`;
+      row.addEventListener("click", () => toggleFolder(node));
+      row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drag-over"); });
+      row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+      row.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        row.classList.remove("drag-over");
+        if (draggedNode) await moveFileToFolder(draggedNode, node);
+      });
+    } else {
+      row.className = "list-item" + (currentFile === node ? " selected" : "");
+      row.draggable = true;
+      row.title = "Drag onto a folder to move it there";
+      row.innerHTML = `
+        <div class="item-main">
+          <div class="name">${langTag(node.ext)}${node.name}</div>
+          ${node.description ? `<div class="desc">${node.description}</div>` : ""}
+        </div>
+      `;
+      row.addEventListener("click", () => openFile(node));
+      row.addEventListener("dragstart", (e) => {
+        draggedNode = node;
+        row.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", node.name);
+      });
+      row.addEventListener("dragend", () => {
+        draggedNode = null;
+        row.classList.remove("dragging");
+      });
+    }
+    listEl.appendChild(row);
+  });
+}
+
+async function toggleFolder(node) {
+  if (node.children === null) await loadChildren(node);
+  node.expanded = !node.expanded;
+  targetFolderNode = node;
+  renderTargetPath();
+  renderList();
+}
+
+async function moveFileToFolder(fileNode, folderNode) {
+  if (!fileNode || !folderNode || fileNode.parentNode === folderNode) return;
+  try {
+    const file = await fileNode.handle.getFile();
+    const text = await file.text();
+    const newHandle = await folderNode.handle.getFileHandle(fileNode.name, { create: true });
+    const writable = await newHandle.createWritable();
+    await writable.write(text);
+    await writable.close();
+    await fileNode.parentNode.handle.removeEntry(fileNode.name);
+
+    await loadChildren(fileNode.parentNode);
+    if (folderNode.children !== null) await loadChildren(folderNode);
+    if (currentFile === fileNode) resetEditor(true);
+
+    statusEl.textContent = `Moved "${fileNode.name}" into "${folderNode.name}"`;
+    renderTargetPath();
+    renderList();
+  } catch (err) {
+    alert("Could not move file: " + err.message);
+  }
+}
+
+function lockEditor() {
+  editLocked = true;
+  nameInput.readOnly = true;
+  langInput.disabled = true;
+  contentInput.readOnly = true;
+  saveBtn.disabled = true;
+  lockBanner.style.display = "flex";
+}
+
+function unlockEditor() {
+  editLocked = false;
+  nameInput.readOnly = false;
+  langInput.disabled = false;
+  contentInput.readOnly = false;
+  saveBtn.disabled = false;
+  lockBanner.style.display = "none";
+}
+
+editBtn.addEventListener("click", unlockEditor);
+
+async function openFile(node) {
+  const file = await node.handle.getFile();
+  const text = await file.text();
+  currentFile = node;
+  editorTitle.textContent = "Editing: " + node.name;
+  nameInput.value = node.name.replace(/\.(sql|kql)$/i, "");
+  langInput.value = node.ext === "kql" ? "kql" : "sql";
+  contentInput.value = text;
+  deleteBtn.disabled = false;
+  lockEditor();
+  renderList();
+  savedPanel.classList.add("collapsed");
+}
+
+function resetEditor(silent) {
+  currentFile = null;
+  editorTitle.textContent = "New query";
+  nameInput.value = "";
+  langInput.value = "sql";
+  contentInput.value = "";
+  deleteBtn.disabled = true;
+  unlockEditor();
+  if (!silent) {
+    renderList();
+    savedPanel.classList.add("collapsed");
+  }
+}
+
+async function connectFolder(handle) {
+  rootNode = { name: handle.name || "queries", handle, kind: "directory", expanded: true, children: null, parentNode: null, depth: 0 };
+  targetFolderNode = rootNode;
+  savedHandle = handle;
+  await idbSet(HANDLE_KEY, handle);
+  refreshBtn.disabled = false;
+  newBtn.disabled = false;
+  newFolderBtn.disabled = false;
+  nameInput.disabled = false;
+  langInput.disabled = false;
+  contentInput.disabled = false;
+  saveBtn.disabled = false;
+  copyBtn.disabled = false;
+  connectBtn.textContent = "📁 Reconnect folder";
+  await loadFiles();
+}
+
+connectBtn.addEventListener("click", async () => {
+  try {
+    // If we already have a remembered folder, just re-request permission on it
+    // instead of forcing the user to pick the folder again.
+    if (savedHandle) {
+      const perm = await savedHandle.requestPermission({ mode: "readwrite" });
+      if (perm === "granted") {
+        await connectFolder(savedHandle);
+        return;
+      }
+    }
+    const handle = await window.showDirectoryPicker({ id: "query-library", startIn: "documents" });
+    await connectFolder(handle);
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      statusEl.textContent = "Could not access folder: " + err.message;
+    }
+  }
+});
+
+refreshBtn.addEventListener("click", loadFiles);
+newBtn.addEventListener("click", () => resetEditor(false));
+searchBox.addEventListener("input", renderList);
+langFilter.addEventListener("change", renderList);
+
+newFolderBtn.addEventListener("click", async () => {
+  if (!targetFolderNode) return;
+  const name = prompt(`New folder name (inside "${targetFolderNode.name}"):`);
+  if (!name) return;
+  try {
+    await targetFolderNode.handle.getDirectoryHandle(name.trim(), { create: true });
+    targetFolderNode.expanded = true;
+    await loadChildren(targetFolderNode);
+    renderTargetPath();
+    renderList();
+  } catch (err) {
+    alert("Could not create folder: " + err.message);
+  }
+});
+
+saveBtn.addEventListener("click", async () => {
+  const rawName = nameInput.value.trim();
+  if (!rawName) { alert("Please enter a file name."); return; }
+  const ext = langInput.value;
+  const fileName = rawName.replace(/\.(sql|kql)$/i, "") + "." + ext;
+
+  // Save into the current file's own folder if editing, otherwise the active target folder
+  const dir = currentFile ? currentFile.parentNode : targetFolderNode;
+  if (!dir) return;
+
+  // Make sure we have an up-to-date listing, then check for a name clash
+  await loadChildren(dir);
+  const existing = dir.children.find(e => e.kind === "file" && e.name.toLowerCase() === fileName.toLowerCase());
+  if (existing && existing !== currentFile) {
+    if (!confirm(`A file named "${fileName}" already exists in "${dir.name}". Overwrite it?`)) return;
+  }
+
+  // If renaming/switching extension away from the file we opened, remove the old one
+  if (currentFile && currentFile.name !== fileName) {
+    try { await dir.handle.removeEntry(currentFile.name); } catch {}
+  }
+
+  const handle = await dir.handle.getFileHandle(fileName, { create: true });
+  const writable = await handle.createWritable();
+  await writable.write(contentInput.value);
+  await writable.close();
+
+  await loadChildren(dir);
+  currentFile = dir.children.find(e => e.kind === "file" && e.name === fileName) || null;
+  editorTitle.textContent = "Editing: " + fileName;
+  deleteBtn.disabled = !currentFile;
+  lockEditor();
+  renderTargetPath();
+  renderList();
+  statusEl.textContent = `Saved "${fileName}"`;
+});
+
+copyBtn.addEventListener("click", async () => {
+  await navigator.clipboard.writeText(contentInput.value);
+  const original = copyBtn.textContent;
+  copyBtn.textContent = "✅ Copied";
+  setTimeout(() => (copyBtn.textContent = original), 1200);
+});
+
+deleteBtn.addEventListener("click", async () => {
+  if (!currentFile) return;
+  if (!confirm(`Delete "${currentFile.name}"? This cannot be undone.`)) return;
+  await currentFile.parentNode.handle.removeEntry(currentFile.name);
+  await loadChildren(currentFile.parentNode);
+  resetEditor(true);
+  renderList();
+});
+
+// --- Cheat sheets ---
+const CHEAT_SHEETS = {
+  sql: [
+    { title: "SELECT basics", desc: "Retrieve specific columns, all columns, or distinct values.",
+      code: "SELECT column1, column2 FROM table_name;\nSELECT * FROM table_name;\nSELECT DISTINCT column1 FROM table_name;" },
+    { title: "WHERE filtering", desc: "Filter rows using comparison, logical, and pattern operators.",
+      code: "SELECT * FROM orders\nWHERE status = 'shipped'\n  AND total > 100\n  AND customer_id IN (1, 2, 3);" },
+    { title: "LIKE / pattern matching", desc: "Match text patterns with wildcards % (any chars) and _ (one char).",
+      code: "SELECT * FROM users WHERE email LIKE '%@contoso.com';\nSELECT * FROM users WHERE name LIKE 'A_ex';" },
+    { title: "NULL handling", desc: "Test for and substitute NULL values.",
+      code: "SELECT * FROM table_name WHERE column1 IS NULL;\nSELECT COALESCE(column1, 'default') FROM table_name;" },
+    { title: "ORDER BY / LIMIT", desc: "Sort results and cap the number of rows returned.",
+      code: "SELECT * FROM table_name\nORDER BY created_at DESC\nLIMIT 10;" },
+    { title: "JOINs", desc: "Combine rows from multiple tables.",
+      code: "SELECT a.id, b.name\nFROM table_a a\nINNER JOIN table_b b ON a.b_id = b.id;\n\nSELECT a.id, b.name\nFROM table_a a\nLEFT JOIN table_b b ON a.b_id = b.id;" },
+    { title: "GROUP BY / HAVING", desc: "Aggregate rows into groups and filter on the aggregate.",
+      code: "SELECT customer_id, COUNT(*) AS order_count, SUM(total) AS total_spent\nFROM orders\nGROUP BY customer_id\nHAVING COUNT(*) > 5;" },
+    { title: "Aggregate functions", desc: "Common functions for summarizing data.",
+      code: "SELECT COUNT(*), SUM(total), AVG(total), MIN(total), MAX(total)\nFROM orders;" },
+    { title: "CASE expression", desc: "Conditional logic inline in a query.",
+      code: "SELECT order_id,\n  CASE\n    WHEN total > 500 THEN 'large'\n    WHEN total > 100 THEN 'medium'\n    ELSE 'small'\n  END AS order_size\nFROM orders;" },
+    { title: "Common Table Expressions (WITH)", desc: "Define a named temporary result set for readability/reuse.",
+      code: "WITH recent_orders AS (\n  SELECT * FROM orders WHERE created_at > DATEADD(day, -30, GETDATE())\n)\nSELECT customer_id, COUNT(*) FROM recent_orders GROUP BY customer_id;" },
+    { title: "Window functions", desc: "Calculations across a set of rows related to the current row.",
+      code: "SELECT order_id, total,\n  ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY created_at) AS rn,\n  SUM(total) OVER (PARTITION BY customer_id) AS customer_total\nFROM orders;" },
+    { title: "UNION / UNION ALL", desc: "Combine result sets from multiple queries (UNION removes duplicates).",
+      code: "SELECT name FROM customers\nUNION\nSELECT name FROM suppliers;" },
+    { title: "INSERT / UPDATE / DELETE", desc: "Modify data in a table.",
+      code: "INSERT INTO table_name (col1, col2) VALUES ('a', 1);\nUPDATE table_name SET col1 = 'b' WHERE id = 1;\nDELETE FROM table_name WHERE id = 1;" },
+    { title: "CREATE TABLE / INDEX", desc: "Define a new table and an index to speed up lookups.",
+      code: "CREATE TABLE users (\n  id INT PRIMARY KEY,\n  email VARCHAR(255) NOT NULL,\n  created_at DATETIME DEFAULT GETDATE()\n);\nCREATE INDEX idx_users_email ON users (email);" },
+    { title: "Date functions", desc: "Common date arithmetic (syntax varies slightly by engine).",
+      code: "SELECT GETDATE();\nSELECT DATEADD(day, -7, GETDATE());\nSELECT DATEDIFF(day, start_date, end_date) FROM events;" },
+    { title: "Subquery", desc: "Nest a query inside another query.",
+      code: "SELECT * FROM orders\nWHERE customer_id IN (\n  SELECT id FROM customers WHERE country = 'UK'\n);" },
+  ],
+  kql: [
+    { title: "where — filter rows", desc: "Filter a table based on a predicate.",
+      code: "SigninLogs\n| where TimeGenerated > ago(1d)\n| where ResultType != \"0\"" },
+    { title: "project / project-away", desc: "Select specific columns to keep or drop.",
+      code: "SigninLogs\n| project TimeGenerated, UserPrincipalName, IPAddress\n\nSigninLogs\n| project-away Resource, ResourceGroup" },
+    { title: "extend — add computed columns", desc: "Create a new column from an expression.",
+      code: "SigninLogs\n| extend IsFailure = ResultType != \"0\"\n| extend DayOfWeek = dayofweek(TimeGenerated)" },
+    { title: "summarize — aggregate", desc: "Group and aggregate rows, similar to SQL GROUP BY.",
+      code: "SigninLogs\n| summarize FailedCount = count() by UserPrincipalName, bin(TimeGenerated, 1h)\n| order by FailedCount desc" },
+    { title: "ago() / datetime / bin()", desc: "Time helpers for filtering and bucketing.",
+      code: "| where TimeGenerated > ago(7d)\n| where TimeGenerated between (datetime(2026-01-01) .. datetime(2026-02-01))\n| summarize count() by bin(TimeGenerated, 1h)" },
+    { title: "order by / sort by", desc: "Sort results ascending or descending.",
+      code: "SigninLogs\n| order by TimeGenerated desc" },
+    { title: "take / limit", desc: "Return only the first N rows (no guaranteed order).",
+      code: "SigninLogs\n| take 50" },
+    { title: "distinct", desc: "Return unique combinations of the given columns.",
+      code: "SigninLogs\n| distinct UserPrincipalName, AppDisplayName" },
+    { title: "count", desc: "Return the number of rows.",
+      code: "SigninLogs\n| where ResultType != \"0\"\n| count" },
+    { title: "join", desc: "Combine rows from two tables on a matching key.",
+      code: "SigninLogs\n| join kind=inner (\n  IdentityInfo | project AccountUPN, Department\n) on $left.UserPrincipalName == $right.AccountUPN" },
+    { title: "let statement", desc: "Define a reusable variable or subquery.",
+      code: "let threshold = 5;\nlet suspiciousUsers =\n    SigninLogs\n    | where ResultType != \"0\"\n    | summarize Failures = count() by UserPrincipalName\n    | where Failures > threshold;\nsuspiciousUsers" },
+    { title: "has / contains / startswith", desc: "String matching operators (has is faster, token-based).",
+      code: "SigninLogs\n| where AppDisplayName has \"Office\"\n| where UserAgent contains \"curl\"\n| where UserPrincipalName startswith \"admin\"" },
+    { title: "parse — extract fields from text", desc: "Pull structured fields out of a free-text column.",
+      code: "Syslog\n| parse SyslogMessage with \"user=\" User \" action=\" Action" },
+    { title: "mv-expand — expand arrays", desc: "Expand a dynamic/array column into multiple rows.",
+      code: "AuditLogs\n| mv-expand TargetResources\n| project TimeGenerated, tostring(TargetResources.displayName)" },
+    { title: "case() — conditional logic", desc: "Inline conditional expression, like SQL CASE.",
+      code: "SigninLogs\n| extend RiskLevel = case(\n    RiskLevelDuringSignIn == \"high\", \"High\",\n    RiskLevelDuringSignIn == \"medium\", \"Medium\",\n    \"Low\")" },
+    { title: "arg_max / arg_min", desc: "Get the row with the max/min value of a column per group.",
+      code: "SigninLogs\n| summarize arg_max(TimeGenerated, *) by UserPrincipalName" },
+    { title: "union — combine tables", desc: "Combine rows from multiple tables into one result.",
+      code: "union SigninLogs, AADNonInteractiveUserSignInLogs\n| where TimeGenerated > ago(1d)" },
+    { title: "render — visualize", desc: "Render results as a chart in supported tools (e.g. Log Analytics).",
+      code: "SigninLogs\n| summarize count() by bin(TimeGenerated, 1h)\n| render timechart" },
+  ],
+};
+
+let cheatActiveLang = "sql";
+
+function renderCheatSheet() {
+  const q = cheatSearch.value.trim().toLowerCase();
+  const items = CHEAT_SHEETS[cheatActiveLang].filter(item =>
+    !q || item.title.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q) || item.code.toLowerCase().includes(q)
+  );
+
+  cheatBody.innerHTML = "";
+  if (items.length === 0) {
+    cheatBody.innerHTML = '<div class="empty">No matching commands.</div>';
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "cheat-card";
+    const pre = document.createElement("pre");
+    pre.textContent = item.code;
+    card.innerHTML = `<div class="cheat-title">${item.title}</div><div class="cheat-desc">${item.desc}</div>`;
+    card.appendChild(pre);
+    const copyItemBtn = document.createElement("button");
+    copyItemBtn.className = "cheat-copy";
+    copyItemBtn.textContent = "📋 Copy";
+    copyItemBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(item.code);
+      const original = copyItemBtn.textContent;
+      copyItemBtn.textContent = "✅ Copied";
+      setTimeout(() => (copyItemBtn.textContent = original), 1200);
+    });
+    card.appendChild(copyItemBtn);
+    cheatBody.appendChild(card);
+  });
+}
+
+function setCheatTab(lang) {
+  cheatActiveLang = lang;
+  tabSql.classList.toggle("active", lang === "sql");
+  tabKql.classList.toggle("active", lang === "kql");
+  renderCheatSheet();
+}
+
+cheatSheetBtn.addEventListener("click", () => {
+  cheatModalOverlay.classList.add("open");
+  setCheatTab(cheatActiveLang);
+});
+cheatModalClose.addEventListener("click", () => cheatModalOverlay.classList.remove("open"));
+cheatModalOverlay.addEventListener("click", (e) => {
+  if (e.target === cheatModalOverlay) cheatModalOverlay.classList.remove("open");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") cheatModalOverlay.classList.remove("open");
+});
+tabSql.addEventListener("click", () => setCheatTab("sql"));
+tabKql.addEventListener("click", () => setCheatTab("kql"));
+cheatSearch.addEventListener("input", renderCheatSheet);
+
+// Try to restore a previously connected folder
+(async () => {
+  if (!SUPPORTED) return;
+  try {
+    const saved = await idbGet(HANDLE_KEY);
+    if (!saved) return;
+    savedHandle = saved;
+    const perm = await saved.queryPermission({ mode: "readwrite" });
+    if (perm === "granted") {
+      await connectFolder(saved);
+    } else {
+      connectBtn.textContent = "📁 Reconnect folder";
+      statusEl.textContent = `Folder "${saved.name}" previously connected — click Reconnect to re-grant access (no need to pick it again).`;
+    }
+  } catch (err) {
+    console.warn("Could not restore folder handle", err);
+  }
+})();
+
+const menuBtn = document.getElementById("menuBtn");
+const menuDropdown = document.getElementById("menuDropdown");
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = menuDropdown.classList.toggle("open");
+  menuBtn.setAttribute("aria-expanded", open);
+});
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("navMenu").contains(e.target)) {
+    menuDropdown.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+});
+</script>
+
+</body>
+</html>
