@@ -126,6 +126,7 @@
       <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">☰ Site Map</button>
       <div class="menu-dropdown" id="menuDropdown">
         <a href="index.html">🛡️ Vulnerability Feed</a>
+        <a href="cve-lookup.html">🔎 CVE Lookup</a>
         <a href="vuln-ticket.html">🎫 Halo Vuln Ticket Builder</a>
         <a href="password-generator.html">🔐 Password Generator</a>
         <a href="query-library.html">📚 Query Library</a>
@@ -149,6 +150,10 @@
     <button onclick="lowercase();">lowercase all</button>
     <button onclick="capitalizesentences();">Capitalize sentences</button>
     <button onclick="capitalizewords();">Capitalize Words</button>
+  </div>
+  <div class="row">
+    <button onclick="removeemptylines();">Remove empty lines</button>
+    <button onclick="addarraycommas();">Add commas (for array)</button>
   </div>
   <hr />
 
@@ -249,6 +254,29 @@ function capitalizewords() {
   t.value = (t.value + '').replace(/^(.)|\s(.)/g, function ($1) {
     return $1.toUpperCase();
   });
+  updatecounts();
+}
+
+function removeemptylines() {
+  var t = document.getElementById("thetext");
+  var tarray = t.value.split("\n");
+  var filtered = tarray.filter(function (line) {
+    return line.trim().length > 0;
+  });
+  t.value = filtered.join("\n");
+  updatecounts();
+}
+
+function addarraycommas() {
+  var t = document.getElementById("thetext");
+  var tarray = t.value.split("\n");
+  var tstr = '';
+  for (var i = 0; i < tarray.length; i++) {
+    tstr = tstr + tarray[i];
+    if (i < (tarray.length - 1) && tarray[i].trim().length > 0) tstr = tstr + ',';
+    if (i < (tarray.length - 1)) tstr = tstr + "\n";
+  }
+  t.value = tstr;
   updatecounts();
 }
 

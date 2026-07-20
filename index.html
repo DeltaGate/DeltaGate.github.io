@@ -31,7 +31,7 @@
   }
   h1 { margin: 0; font-size: 1.4rem; }
   .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  select, button {
+  select, button, input {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
@@ -39,8 +39,12 @@
     border-radius: 6px;
     font-size: 0.9rem;
     cursor: pointer;
+    font-family: inherit;
   }
-  button:hover, select:hover { border-color: var(--accent); }
+  input { cursor: text; }
+  button:hover, select:hover, input:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #searchInput { min-width: 180px; }
   .menu {
     position: relative;
     display: inline-block;
@@ -68,7 +72,54 @@
   }
   .menu-dropdown a:hover { background: var(--bg); color: var(--accent); }
   #status { color: var(--muted); font-size: 0.85rem; margin-left: 8px; }
+  #countdown { color: var(--muted); font-size: 0.78rem; margin-left: 6px; }
   main { padding: 20px 24px; max-width: 900px; margin: 0 auto; }
+
+  .banner {
+    background: #26200f;
+    border: 1px solid #7a662e;
+    color: #ffe07a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+  }
+  .result-count {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .restore-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    padding: 0;
+    font-size: 0.8rem;
+    text-decoration: underline;
+  }
+  .cached-note {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+  .source-health {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .source-health .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+  .dot-ok { background: #6dffa0; }
+  .dot-stale { background: #ffcf6b; }
+  .dot-error { background: #ff8a8a; }
+
   .item {
     background: var(--card);
     border: 1px solid var(--border);
@@ -76,13 +127,38 @@
     padding: 14px 16px;
     margin-bottom: 12px;
   }
-  .item a {
+  .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .item .headline {
     color: var(--text);
     text-decoration: none;
     font-weight: 600;
     font-size: 1.02rem;
+    cursor: pointer;
   }
-  .item a:hover { color: var(--accent); text-decoration: underline; }
+  .item .headline:hover { color: var(--accent); text-decoration: underline; }
+  .cve-mention {
+    color: #ffcf6b;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .cve-mention:hover { text-decoration: underline; }
+  .copy-btn, .dismiss-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .dismiss-btn:hover { color: #ff8a8a; border-color: #ff8a8a; }
   .meta {
     margin-top: 6px;
     font-size: 0.8rem;
@@ -90,6 +166,7 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
   }
   .source-tag {
     background: #24304a;
@@ -106,12 +183,20 @@
     font-size: 0.75rem;
     font-weight: 600;
   }
+  .tag-ransomware { background: #4a1f24; color: #ff8a8a; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .tag-breach { background: #4a2f1f; color: #ffb27a; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .tag-patch { background: #1f3a2b; color: #8affaa; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .tag-kev { background: #2a2450; color: #c3b6ff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .tag-new { background: #163a24; color: #6dffa0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
   .item.alert { border-color: #7a2e34; }
+  .item.kev-catalog { border-color: #4a3f8a; }
   #alertToggle.active {
     border-color: #ff8a8a;
     background: #2a1418;
     color: #ff8a8a;
   }
+  .cve-link { color: #ffcf6b; text-decoration: none; font-weight: 600; white-space: nowrap; }
+  .cve-link:hover { text-decoration: underline; }
   .snippet { margin-top: 8px; font-size: 0.88rem; color: #c4c8d0; }
   .loading, .empty { color: var(--muted); text-align: center; padding: 40px; }
   footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 20px; }
@@ -122,14 +207,17 @@
 <header>
   <h1>🛡️ Vulnerability News Feed</h1>
   <div class="controls">
-    <select id="sourceFilter">
+    <input id="searchInput" type="text" placeholder="Search headlines…" autocomplete="off" aria-label="Search headlines">
+    <select id="sourceFilter" aria-label="Filter by source">
       <option value="all">All sources</option>
     </select>
     <button id="refreshBtn">Refresh now</button>
-    <button id="alertToggle" title="Show only zero-day / actively exploited alerts">🔥 Zero-days &amp; Active Exploits</button>
+    <button id="alertToggle" title="Show only zero-day / actively exploited alerts" aria-pressed="false">🔥 Zero-days &amp; Active Exploits</button>
+    <button id="markReadBtn" title="Clear all 'New' badges">✅ Mark all read</button>
     <div class="menu" id="navMenu">
       <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">☰ Site Map</button>
       <div class="menu-dropdown" id="menuDropdown">
+        <a href="cve-lookup.html">🔎 CVE Lookup</a>
         <a href="vuln-ticket.html">🎫 Halo Vuln Ticket Builder</a>
         <a href="password-generator.html">🔐 Password Generator</a>
         <a href="txtformat_local.html">📝 Text Formatter</a>
@@ -138,6 +226,7 @@
       </div>
     </div>
     <span id="status"></span>
+    <span id="countdown"></span>
   </div>
 </header>
 
@@ -147,40 +236,124 @@
 
 <footer>
   Runs entirely in your browser. Feeds fetched via the free
-  <a href="https://rss2json.com" style="color:var(--accent)">rss2json.com</a> API (to bypass CORS).
+  <a href="https://rss2json.com" style="color:var(--accent)">rss2json.com</a> API (to bypass CORS),
+  cross-referenced against the real
+  <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" style="color:var(--accent)">CISA KEV catalog</a>.
   Auto-refreshes every 15 minutes.
 </footer>
 
 <script>
 // --- Configure your RSS sources here ---
 const FEEDS = [
-  { name: "CISA KEV",         url: "https://www.cisa.gov/cybersecurity-advisories/all.xml" },
+  { name: "CISA Advisories",  url: "https://www.cisa.gov/cybersecurity-advisories/all.xml" },
   { name: "The Hacker News",  url: "https://feeds.feedburner.com/TheHackersNews" },
   { name: "Krebs on Security",url: "https://krebsonsecurity.com/feed/" },
   { name: "BleepingComputer", url: "https://www.bleepingcomputer.com/feed/" },
   { name: "SANS ISC",         url: "https://isc.sans.edu/rssfeed_full.xml" },
   { name: "Zero Day Initiative", url: "https://www.thezdi.com/blog?format=rss" },
   { name: "Rapid7",           url: "https://www.rapid7.com/rss.xml" },
- // { name: "Dark Reading",     url: "https://www.darkreading.com/rss.xml" },
 ];
+const KEV_SOURCE_NAME = "CISA KEV Catalog";
+// Official CISA URL blocks browser CORS requests; use the CISA-maintained GitHub
+// mirror instead, which serves the same data with Access-Control-Allow-Origin: *.
+const KEV_ENDPOINT = "https://raw.githubusercontent.com/cisagov/kev-data/develop/known_exploited_vulnerabilities.json";
+const KEV_LOOKBACK_DAYS = 30;
 
 const RSS2JSON_ENDPOINT = "https://api.rss2json.com/v1/api.json?rss_url=";
 const REFRESH_MS = 15 * 60 * 1000;
+const LAST_VISIT_KEY = "vulnFeedLastVisit";
+const FILTER_SOURCE_KEY = "vulnFeedSourceFilter";
+const FILTER_ALERT_KEY = "vulnFeedAlertOnly";
+const CACHE_KEY = "vulnFeedCache";
+const DISMISSED_KEY = "vulnFeedDismissed";
+const MAX_DISMISSED = 500; // cap so localStorage doesn't grow unbounded
+const STALE_MS = 60 * 60 * 1000; // a source not refreshed successfully in 1h is flagged stale
+
 let allItems = [];
-let alertOnly = false;
+let alertOnly = localStorage.getItem(FILTER_ALERT_KEY) === "true";
+let failedSources = [];
+let nextRefreshAt = 0;
+let sourceHealth = {}; // name -> { lastSuccess: Date|null, lastError: Date|null }
+let dismissed = new Set(loadDismissed());
+let usingCache = false;
+// Timestamp of the previous visit — badges "new" items. Mutable so "Mark all read" can bump it.
+let lastVisitTs = localStorage.getItem(LAST_VISIT_KEY) ? new Date(localStorage.getItem(LAST_VISIT_KEY)) : null;
+
+function loadDismissed() {
+  try { return JSON.parse(localStorage.getItem(DISMISSED_KEY)) || []; } catch { return []; }
+}
+function saveDismissed() {
+  const arr = [...dismissed].slice(-MAX_DISMISSED);
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify(arr));
+}
+function itemKey(item) { return item.link || item.title || ""; }
 
 // Keywords/phrases indicating a zero-day or actively-exploited vulnerability
 const ALERT_PATTERN = /\bzero[\s-]?day\b|\b0-?day\b|actively exploit|exploited in the wild|exploitation in the wild|under active exploitation|being exploited|mass exploitation|proof[\s-]of[\s-]concept exploit|poc exploit released|known exploited vulnerabilit(y|ies)|\bkev\b|exploited by (ransomware|attackers|threat actors|hackers)/i;
+const RANSOMWARE_PATTERN = /ransomware/i;
+const BREACH_PATTERN = /data breach|breach of|leaked data|exposed database|records exposed|records leaked|customer data (was |were )?(exposed|stolen|leaked)/i;
+const PATCH_TUESDAY_PATTERN = /patch tuesday/i;
+const CVE_PATTERN = /CVE-\d{4}-\d{4,7}/gi;
 
 function isAlertItem(item) {
-  return ALERT_PATTERN.test(item.title || "") || ALERT_PATTERN.test(item.snippet || "") || item.source === "CISA KEV";
+  return ALERT_PATTERN.test(item.title || "") || ALERT_PATTERN.test(item.snippet || "") || item.isKev;
+}
+function categorize(item) {
+  const text = `${item.title || ""} ${item.snippet || ""}`;
+  const tags = [];
+  if (item.isKev) tags.push({ cls: "tag-kev", label: "📌 CISA KEV Catalog" });
+  if (RANSOMWARE_PATTERN.test(text)) tags.push({ cls: "tag-ransomware", label: "🦠 Ransomware" });
+  if (BREACH_PATTERN.test(text)) tags.push({ cls: "tag-breach", label: "🗃️ Data Breach" });
+  if (PATCH_TUESDAY_PATTERN.test(text)) tags.push({ cls: "tag-patch", label: "🩹 Patch Tuesday" });
+  return tags;
 }
 
 const resultsEl = document.getElementById("results");
 const statusEl = document.getElementById("status");
+const countdownEl = document.getElementById("countdown");
 const sourceFilterEl = document.getElementById("sourceFilter");
 const refreshBtn = document.getElementById("refreshBtn");
 const alertToggleEl = document.getElementById("alertToggle");
+const searchInputEl = document.getElementById("searchInput");
+const markReadBtn = document.getElementById("markReadBtn");
+
+// Debounce helper — avoids re-rendering on every keystroke while typing a search term.
+function debounce(fn, wait) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}
+
+/* ---------------- Safety helpers ---------------- */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+function safeUrl(url) {
+  try {
+    const u = new URL(url, location.href);
+    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+  } catch { /* fall through */ }
+  return "#";
+}
+// Linkify any CVE IDs found in already-escaped text to the CVE Lookup tool
+function linkifyCves(escapedText) {
+  return escapedText.replace(CVE_PATTERN, (m) =>
+    `<a class="cve-link" href="cve-lookup.html?cve=${encodeURIComponent(m.toUpperCase())}" target="_blank" rel="noopener">${m}</a>`
+  );
+}
+// The headline is now a clickable <span> (not an <a>), so it's safe to nest real <a>
+// links for CVE mentions inside it — clicking a CVE opens the CVE tool (stopping
+// propagation so it doesn't also trigger the headline's "open article" click handler).
+function highlightCves(escapedText) {
+  return escapedText.replace(CVE_PATTERN, (m) =>
+    `<a class="cve-mention" href="cve-lookup.html?cve=${encodeURIComponent(m.toUpperCase())}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${m}</a>`
+  );
+}
 
 function stripHtml(html) {
   const tmp = document.createElement("div");
@@ -193,6 +366,7 @@ async function fetchFeed(feed) {
     const res = await fetch(RSS2JSON_ENDPOINT + encodeURIComponent(feed.url));
     const data = await res.json();
     if (data.status !== "ok") throw new Error(data.message || "feed error");
+    sourceHealth[feed.name] = { ...sourceHealth[feed.name], lastSuccess: new Date(), lastError: null };
     return data.items.map(item => ({
       title: item.title,
       link: item.link,
@@ -202,61 +376,258 @@ async function fetchFeed(feed) {
     }));
   } catch (err) {
     console.error("Failed to load", feed.name, err);
+    failedSources.push(feed.name);
+    sourceHealth[feed.name] = { ...sourceHealth[feed.name], lastError: new Date() };
     return [];
   }
 }
 
+async function fetchKevAdditions() {
+  try {
+    const res = await fetch(KEV_ENDPOINT);
+    const data = await res.json();
+    const cutoff = Date.now() - KEV_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+    sourceHealth[KEV_SOURCE_NAME] = { ...sourceHealth[KEV_SOURCE_NAME], lastSuccess: new Date(), lastError: null };
+    return (data.vulnerabilities || [])
+      .filter(v => v.dateAdded && new Date(v.dateAdded).getTime() >= cutoff)
+      .map(v => ({
+        title: `${v.cveID}: ${v.vulnerabilityName}`,
+        link: `https://nvd.nist.gov/vuln/detail/${v.cveID}`,
+        pubDate: new Date(v.dateAdded),
+        source: KEV_SOURCE_NAME,
+        snippet: v.shortDescription || "",
+        isKev: true
+      }));
+  } catch (err) {
+    console.error("Failed to load CISA KEV catalog", err);
+    failedSources.push(KEV_SOURCE_NAME);
+    sourceHealth[KEV_SOURCE_NAME] = { ...sourceHealth[KEV_SOURCE_NAME], lastError: new Date() };
+    return [];
+  }
+}
+
+// Drop near-duplicate stories (same news picked up by multiple outlets), keeping the newest.
+function dedupeItems(items) {
+  const sigWords = (title) => new Set(
+    (title || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(w => w.length > 4)
+  );
+  const kept = [];
+  const keptSigs = [];
+  for (const item of items) {
+    const sig = sigWords(item.title);
+    let isDupe = false;
+    if (sig.size >= 3) {
+      for (const other of keptSigs) {
+        const intersection = [...sig].filter(w => other.has(w)).length;
+        const union = new Set([...sig, ...other]).size;
+        if (union > 0 && intersection / union >= 0.6) { isDupe = true; break; }
+      }
+    }
+    if (!isDupe) { kept.push(item); keptSigs.push(sig); }
+  }
+  return kept;
+}
+
+function bindGlobalResultHandlers() {
+  const restoreBtn = document.getElementById("restoreDismissedBtn");
+  if (restoreBtn) {
+    restoreBtn.addEventListener("click", () => {
+      dismissed.clear();
+      saveDismissed();
+      render(allItems);
+    });
+  }
+  resultsEl.querySelectorAll(".headline").forEach(el => {
+    const open = () => {
+      const href = el.dataset.href;
+      if (href && href !== "#") window.open(href, "_blank", "noopener");
+    };
+    el.addEventListener("click", (e) => {
+      // A CVE mention inside the headline is its own real link handled separately —
+      // only open the article if the click wasn't on/inside that nested link.
+      if (e.target.closest(".cve-mention")) return;
+      open();
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+}
+
+function renderSourceHealth() {
+  const now = Date.now();
+  const names = [...FEEDS.map(f => f.name), KEV_SOURCE_NAME];
+  return `<div class="source-health">` + names.map(name => {
+    const h = sourceHealth[name] || {};
+    let cls = "dot-error", title = "Never loaded successfully";
+    if (h.lastSuccess) {
+      const age = now - h.lastSuccess.getTime();
+      if (age <= STALE_MS) { cls = "dot-ok"; title = `Updated ${h.lastSuccess.toLocaleTimeString()}`; }
+      else { cls = "dot-stale"; title = `Stale — last success ${h.lastSuccess.toLocaleTimeString()}`; }
+    }
+    if (h.lastError && (!h.lastSuccess || h.lastError > h.lastSuccess)) {
+      cls = "dot-error";
+      title = `Failed at ${h.lastError.toLocaleTimeString()}`;
+    }
+    return `<span title="${escapeHtml(title)}"><span class="dot ${cls}"></span>${escapeHtml(name)}</span>`;
+  }).join("") + `</div>`;
+}
+
 function render(items) {
   const filter = sourceFilterEl.value;
-  let filtered = filter === "all" ? items : items.filter(i => i.source === filter);
+  const keyword = searchInputEl.value.trim().toLowerCase();
+  let filtered = items.filter(i => !dismissed.has(itemKey(i)));
+  const totalAfterDismiss = filtered.length;
+  filtered = filter === "all" ? filtered : filtered.filter(i => i.source === filter);
   if (alertOnly) filtered = filtered.filter(isAlertItem);
+  if (keyword) {
+    filtered = filtered.filter(i =>
+      (i.title || "").toLowerCase().includes(keyword) || (i.snippet || "").toLowerCase().includes(keyword)
+    );
+  }
+
+  let html = "";
+  if (usingCache) {
+    html += `<div class="cached-note">📦 Showing cached results from your last visit — refreshing in the background…</div>`;
+  }
+  if (failedSources.length) {
+    html += `<div class="banner">⚠️ Failed to load: ${escapeHtml([...new Set(failedSources)].join(", "))}. They may be temporarily rate-limited or unavailable.</div>`;
+  }
+  html += renderSourceHealth();
+  html += `<div class="result-count"><span>Showing ${filtered.length} of ${totalAfterDismiss} item${totalAfterDismiss === 1 ? "" : "s"}</span>${dismissed.size ? `<button class="restore-link" id="restoreDismissedBtn">↩️ Restore ${dismissed.size} dismissed</button>` : ""}</div>`;
 
   if (filtered.length === 0) {
-    resultsEl.innerHTML = `<div class="empty">${alertOnly ? "No zero-day / actively exploited alerts found." : "No items found."}</div>`;
+    html += `<div class="empty">${alertOnly ? "No zero-day / actively exploited alerts found." : "No items found."}</div>`;
+    resultsEl.innerHTML = html;
+    bindGlobalResultHandlers();
     return;
   }
 
-  resultsEl.innerHTML = filtered.map(item => {
+  html += filtered.map(item => {
     const alert = isAlertItem(item);
+    const tags = categorize(item);
+    const isNew = lastVisitTs && item.pubDate && item.pubDate > lastVisitTs;
+    const titleHtml = highlightCves(escapeHtml(item.title || "(untitled)"));
+    const snippetHtml = item.snippet ? linkifyCves(escapeHtml(item.snippet)) : "";
+    const rawLink = item.link || "#";
     return `
-    <div class="item${alert ? " alert" : ""}">
-      <a href="${item.link}" target="_blank" rel="noopener">${item.title}</a>
+    <div class="item${alert ? " alert" : ""}${item.isKev ? " kev-catalog" : ""}">
+      <div class="item-head">
+        <span class="headline" role="link" tabindex="0" data-href="${escapeHtml(safeUrl(rawLink))}">${titleHtml}</span>
+        <div class="item-actions">
+          <button class="copy-btn" aria-label="Copy headline and link" data-title="${escapeHtml(item.title || "")}" data-link="${escapeHtml(rawLink)}">📋 Copy</button>
+          <button class="dismiss-btn" aria-label="Dismiss this item" data-key="${escapeHtml(itemKey(item))}">✕</button>
+        </div>
+      </div>
       <div class="meta">
-        <span class="source-tag">${item.source}</span>
+        <span class="source-tag">${escapeHtml(item.source)}</span>
+        ${isNew ? '<span class="tag-new">🆕 New</span>' : ""}
         ${alert ? '<span class="alert-tag">🔥 Actively Exploited / Zero-Day</span>' : ""}
+        ${tags.map(t => `<span class="${t.cls}">${t.label}</span>`).join("")}
         <span>${item.pubDate ? item.pubDate.toLocaleString() : "unknown date"}</span>
       </div>
-      ${item.snippet ? `<div class="snippet">${item.snippet}${item.snippet.length >= 220 ? "…" : ""}</div>` : ""}
+      ${snippetHtml ? `<div class="snippet">${snippetHtml}${item.snippet.length >= 220 ? "…" : ""}</div>` : ""}
     </div>
   `;
   }).join("");
+
+  resultsEl.innerHTML = html;
+  bindGlobalResultHandlers();
+
+  resultsEl.querySelectorAll(".copy-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const text = `${btn.dataset.title} - ${btn.dataset.link}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        const original = btn.textContent;
+        btn.textContent = "✅ Copied";
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      } catch { /* clipboard unavailable — ignore */ }
+    });
+  });
+
+  resultsEl.querySelectorAll(".dismiss-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      dismissed.add(btn.dataset.key);
+      saveDismissed();
+      render(allItems);
+    });
+  });
+}
+
+function updateCountdown() {
+  if (!nextRefreshAt) { countdownEl.textContent = ""; return; }
+  const remaining = Math.max(0, nextRefreshAt - Date.now());
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  countdownEl.textContent = `Next refresh in ${mins}:${String(secs).padStart(2, "0")}`;
+}
+setInterval(updateCountdown, 1000);
+
+function loadCachedItems() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.map(i => ({ ...i, pubDate: i.pubDate ? new Date(i.pubDate) : null }));
+  } catch { return null; }
+}
+function saveCachedItems(items) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(items)); } catch { /* storage full/unavailable — ignore */ }
 }
 
 async function loadAll() {
   statusEl.textContent = "Fetching…";
   refreshBtn.disabled = true;
+  failedSources = [];
 
-  const results = await Promise.all(FEEDS.map(fetchFeed));
-  allItems = results.flat().sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+  const [feedResults, kevItems] = await Promise.all([
+    Promise.all(FEEDS.map(fetchFeed)),
+    fetchKevAdditions()
+  ]);
 
-  // populate source filter (preserve current selection)
+  const merged = [...feedResults.flat(), ...kevItems].sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+  allItems = dedupeItems(merged);
+  usingCache = false;
+  saveCachedItems(allItems);
+
+  // populate source filter (preserve current selection), sorted alphabetically for easier scanning
   const current = sourceFilterEl.value;
+  const sourceNames = [...FEEDS.map(f => f.name), KEV_SOURCE_NAME].sort((a, b) => a.localeCompare(b));
   sourceFilterEl.innerHTML = '<option value="all">All sources</option>' +
-    FEEDS.map(f => `<option value="${f.name}">${f.name}</option>`).join("");
+    sourceNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
   sourceFilterEl.value = current || "all";
 
   render(allItems);
   statusEl.textContent = "Updated " + new Date().toLocaleTimeString();
   refreshBtn.disabled = false;
+  nextRefreshAt = Date.now() + REFRESH_MS;
+  updateCountdown();
 }
 
-sourceFilterEl.addEventListener("change", () => render(allItems));
+sourceFilterEl.addEventListener("change", () => {
+  localStorage.setItem(FILTER_SOURCE_KEY, sourceFilterEl.value);
+  render(allItems);
+});
+searchInputEl.addEventListener("input", debounce(() => render(allItems), 200));
 refreshBtn.addEventListener("click", loadAll);
 alertToggleEl.addEventListener("click", () => {
   alertOnly = !alertOnly;
   alertToggleEl.classList.toggle("active", alertOnly);
+  alertToggleEl.setAttribute("aria-pressed", String(alertOnly));
+  localStorage.setItem(FILTER_ALERT_KEY, String(alertOnly));
   render(allItems);
 });
+markReadBtn.addEventListener("click", () => {
+  lastVisitTs = new Date();
+  localStorage.setItem(LAST_VISIT_KEY, lastVisitTs.toISOString());
+  render(allItems);
+});
+
+// Restore persisted filter state
+alertToggleEl.classList.toggle("active", alertOnly);
+alertToggleEl.setAttribute("aria-pressed", String(alertOnly));
+const savedSource = localStorage.getItem(FILTER_SOURCE_KEY);
 
 const menuBtn = document.getElementById("menuBtn");
 const menuDropdown = document.getElementById("menuDropdown");
@@ -272,8 +643,36 @@ document.addEventListener("click", (e) => {
   }
 });
 
-loadAll();
+// Show cached results instantly (from sessionStorage) while the real fetch runs in the background.
+const cached = loadCachedItems();
+if (cached && cached.length) {
+  allItems = cached;
+  usingCache = true;
+  if (savedSource) sourceFilterEl.value = savedSource;
+  const sourceNames = [...new Set(cached.map(i => i.source))].sort((a, b) => a.localeCompare(b));
+  sourceFilterEl.innerHTML = '<option value="all">All sources</option>' +
+    sourceNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("") ;
+  if (savedSource) sourceFilterEl.value = savedSource;
+  render(allItems);
+  statusEl.textContent = "Showing cached results…";
+}
+
+loadAll().then(() => {
+  if (savedSource) sourceFilterEl.value = savedSource;
+  render(allItems);
+});
 setInterval(loadAll, REFRESH_MS);
+
+// Persist "last visit" only when the tab is actually being left/hidden — NOT on every
+// refresh — so the "New" badge/mark-all-read reflect real gaps between visits, not
+// the 15-minute auto-refresh cycle.
+function recordVisitEnd() {
+  localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString());
+}
+window.addEventListener("pagehide", recordVisitEnd);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") recordVisitEnd();
+});
 </script>
 
 </body>
